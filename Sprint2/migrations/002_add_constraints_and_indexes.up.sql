@@ -27,7 +27,7 @@ ALTER TABLE part_reservation ADD CONSTRAINT part_reservation_status_chk CHECK (s
 ALTER TABLE used_part ADD CONSTRAINT used_part_quantity_chk CHECK (quantity>0);
 ALTER TABLE payment ADD CONSTRAINT payment_amount_chk CHECK (amount>=0);
 ALTER TABLE payment ADD CONSTRAINT payment_status_chk CHECK (status IN ('Оплачено','Не требуется'));
-ALTER TABLE payment ADD CONSTRAINT payment_zero_amount_chk CHECK ((amount=0 AND status='Не требуется') OR amount>0);
+ALTER TABLE payment ADD CONSTRAINT payment_zero_amount_chk CHECK ((amount=0 AND status='Не требуется') OR (amount>0 AND status='Оплачено'));
 ALTER TABLE payment ADD CONSTRAINT payment_paid_at_chk CHECK ((status='Оплачено')=(paid_at IS NOT NULL));
 ALTER TABLE status_history ADD CONSTRAINT status_history_new_status_chk CHECK (new_status IN ('Создана','Принята','На диагностике','Ожидание','В ремонте','Готова','Закрыта','Отменена'));
 ALTER TABLE status_history ADD CONSTRAINT status_history_different_statuses_chk CHECK (old_status IS DISTINCT FROM new_status);
