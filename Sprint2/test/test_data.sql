@@ -29,10 +29,7 @@ VALUES
      '+79990000011', 'master1@example.com'),
 
     (3, 'Мастер Пётр', 'Мастер',
-     '+79990000012', 'master2@example.com'),
-
-    (4, 'Сергей Орлов', 'Менеджер',
-     '+79990000013', 'manager@example.com');
+     '+79990000012', 'master2@example.com');
 
 INSERT INTO equipment
     (id, client_id, type, manufacturer, model,
