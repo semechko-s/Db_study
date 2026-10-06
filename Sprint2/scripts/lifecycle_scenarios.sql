@@ -1,6 +1,6 @@
 -- Система сервисного центра — SQL-сценарии жизненного цикла
 --  (КТ-02, обязательный пункт: сценарии
--- жизненного цикла минимум трёх основных сущностей)
+--  жизненного цикла минимум трёх основных сущностей)
 --
 -- Статусы приведены в соответствие с текущей схемой команды:
 -- 001_create_base_schema.up.sql + 002_add_constraints_and_indexes.up.sql
@@ -16,23 +16,28 @@
 
 -- Справочные данные: клиент, устройство, оператор, мастер, запчасть.
 INSERT INTO client (id, full_name, phone, email)
+OVERRIDING SYSTEM VALUE
 VALUES (1, 'Иванов Иван Иванович', '+79990000001', 'ivanov@example.com');
 
 INSERT INTO equipment (id, client_id, type, manufacturer, model, serial_number, status)
+OVERRIDING SYSTEM VALUE
 VALUES (1, 1, 'Ноутбук', 'Acme', 'A15', 'SN-0001', 'Зарегистрировано');
 
 INSERT INTO employee (id, full_name, specialization, phone, email)
+OVERRIDING SYSTEM VALUE
 VALUES
     (1, 'Оператор Оля', 'Оператор', '+79990000002', 'operator@example.com'),
     (2, 'Мастер Миша',  'Мастер',   '+79990000003', 'master@example.com');
 
 INSERT INTO part (id, name, article, price, stock_quantity)
+OVERRIDING SYSTEM VALUE
 VALUES (1, 'Термопаста', 'TP-001', 300.00, 10);
 
 
 -- Шаг 1. Клиент создаёт заявку (сценарий 1 README: «Создание заявки»).
 -- Правило 2: обязательны клиент (через устройство), описание неисправности.
 INSERT INTO request (id, equipment_id, description, status, created_at)
+OVERRIDING SYSTEM VALUE
 VALUES (1, 1, 'Ноутбук сильно греется и выключается', 'Создана', now());
 
 INSERT INTO status_history (request_id, old_status, new_status, reason, changed_at)
@@ -66,9 +71,11 @@ VALUES (1, 2, now(), 'Обнаружен засор системы охлажд�
 
 -- По результатам диагностики формируется работа и входящие в неё ремонты.
 INSERT INTO work (id, request_id, status, cost)
+OVERRIDING SYSTEM VALUE
 VALUES (1, 1, 'Запланирована', 0);
 
 INSERT INTO repair (id, work_id, master_id, description, cost, status)
+OVERRIDING SYSTEM VALUE
 VALUES (1, 1, 2, 'Очистка радиатора и замена термопасты', 800.00, 'Запланирован');
 
 -- Диагностика завершена — заявка уходит в «Ожидание» с причиной
@@ -146,13 +153,16 @@ VALUES (1, 'Готова', 'Закрыта', 'Устройство выдано 
 -- диагностики; в любой момент активен только один мастер.
 
 INSERT INTO employee (id, full_name, specialization)
+OVERRIDING SYSTEM VALUE
 VALUES (3, 'Мастер Пётр', 'Мастер');
 
 INSERT INTO request (id, equipment_id, description, status, created_at)
+OVERRIDING SYSTEM VALUE
 VALUES (2, 1, 'Не включается клавиатура', 'На диагностике', now());
 
 -- Мастер Миша назначен и уже начал диагностику.
 INSERT INTO master_assignment (id, request_id, employee_id, assigned_at, is_active)
+OVERRIDING SYSTEM VALUE
 VALUES (10, 2, 2, now(), true);
 
 -- Мастер Миша заболел / ушёл в отпуск — нужна замена.
@@ -182,18 +192,22 @@ VALUES (2, 3, now(), true);
 -- ============================================================
 
 INSERT INTO request (id, equipment_id, description, status, client_approved, approval_at, created_at)
+OVERRIDING SYSTEM VALUE
 VALUES (3, 1, 'Замена вентилятора и чистка от пыли', 'В ремонте', true, now(), now());
 
 INSERT INTO work (id, request_id, status, started_at, cost)
+OVERRIDING SYSTEM VALUE
 VALUES (2, 3, 'Выполняется', now(), 0);
 
 INSERT INTO repair (id, work_id, master_id, description, cost, status, started_at)
+OVERRIDING SYSTEM VALUE
 VALUES
     (2, 2, 2, 'Чистка от пыли', 400.00, 'Выполняется', now()),
     (3, 2, 2, 'Замена вентилятора', 500.00, 'Выполняется', now());
 
 -- На складе закончился нужный вентилятор.
 INSERT INTO part (id, name, article, price, stock_quantity)
+OVERRIDING SYSTEM VALUE
 VALUES (2, 'Вентилятор охлаждения', 'FAN-001', 700.00, 0);
 
 -- Ремонт «Чистка от пыли» не зависит от этой детали — продолжается.
