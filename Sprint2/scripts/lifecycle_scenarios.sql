@@ -14,6 +14,23 @@
 --              diagnosis, work, repair, part, part_reservation,
 --              used_part, payment, status_history
 
+
+
+psql -d service_center -f lifecycle_scenarios.sql
+
+psql -d service_center
+
+--TRUNCATE notification, status_history, payment, used_part,
+--         part_reservation, repair, work, diagnosis,
+ --        master_assignment, request, equipment, part,
+   --      employee, client
+--RESTART IDENTITY CASCADE;
+--TRUNCATE TABLE
+
+
+--ОДНОЙ КОМАНДОЙ
+--psql -d service_center -c "TRUNCATE notification, status_history, payment, used_part, part_reservation, repair, work, diagnosis, master_assignment, request, equipment, part, employee, client RESTART IDENTITY CASCADE;" && psql -d service_center -f scripts/lifecycle_scenarios.sql
+
 -- Справочные данные: клиент, устройство, оператор, мастер, запчасть.
 INSERT INTO client (id, full_name, phone, email)
 OVERRIDING SYSTEM VALUE
