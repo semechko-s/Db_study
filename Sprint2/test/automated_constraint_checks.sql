@@ -1,6 +1,5 @@
 -- Система сервисного центра — автоматизированная проверка схемы
---  (КТ-02, желательный пункт: автоматизировать
--- проверку схемы и ограничений)
+-- (КТ-02, желательный пункт: автоматизировать проверку схемы и ограничений)
 --
 -- Проверяет ограничения из 001_create_base_schema.up.sql И
 -- 002_add_constraints_and_indexes.up.sql. Запускать ПОСЛЕ применения
@@ -29,31 +28,33 @@ CREATE TEMP TABLE test_results (
     detail  TEXT
 );
 
+-- Вспомогательная функция для проверки, что операция отклонена
 CREATE OR REPLACE FUNCTION pg_temp.assert_rejected(test_name TEXT, stmt TEXT)
 RETURNS void AS $$
 BEGIN
-    SAVEPOINT sp_test;
+    -- Пытаемся выполнить операцию
     EXECUTE stmt;
-    ROLLBACK TO SAVEPOINT sp_test;
+    -- Если выполнение дошло сюда, значит операция прошла (FAIL)
     INSERT INTO test_results (name, status, detail)
     VALUES (test_name, 'FAIL', 'Ожидалось отклонение, но операция прошла');
 EXCEPTION WHEN OTHERS THEN
-    ROLLBACK TO SAVEPOINT sp_test;
+    -- Если поймали исключение, значит операция отклонена (PASS)
     INSERT INTO test_results (name, status, detail)
     VALUES (test_name, 'PASS', 'Отклонено как ожидалось: ' || SQLERRM);
 END;
 $$ LANGUAGE plpgsql;
 
+-- Вспомогательная функция для проверки, что операция принята
 CREATE OR REPLACE FUNCTION pg_temp.assert_accepted(test_name TEXT, stmt TEXT)
 RETURNS void AS $$
 BEGIN
-    SAVEPOINT sp_test;
+    -- Пытаемся выполнить операцию
     EXECUTE stmt;
-    ROLLBACK TO SAVEPOINT sp_test;
+    -- Если выполнение дошло сюда, значит операция прошла (PASS)
     INSERT INTO test_results (name, status, detail)
     VALUES (test_name, 'PASS', 'Корректные данные приняты, как ожидалось');
 EXCEPTION WHEN OTHERS THEN
-    ROLLBACK TO SAVEPOINT sp_test;
+    -- Если поймали исключение, значит операция отклонена (FAIL)
     INSERT INTO test_results (name, status, detail)
     VALUES (test_name, 'FAIL', 'Корректные данные ошибочно отклонены: ' || SQLERRM);
 END;
@@ -61,20 +62,43 @@ $$ LANGUAGE plpgsql;
 
 -- ------------------------------------------------------------
 -- Базовые данные для тестов
+-- ИСПРАВЛЕНО: добавлено OVERRIDING SYSTEM VALUE для колонок id
 -- ------------------------------------------------------------
 
-INSERT INTO client (id, full_name, phone) VALUES (9001, 'Тестовый клиент', '+70000000000');
+INSERT INTO client (id, full_name, phone)
+OVERRIDING SYSTEM VALUE
+VALUES (9001, 'Тестовый клиент', '+70000000000');
+
 INSERT INTO equipment (id, client_id, type, manufacturer, model, status)
+OVERRIDING SYSTEM VALUE
 VALUES (9001, 9001, 'Ноутбук', 'TestBrand', 'X1', 'Зарегистрировано');
-INSERT INTO employee (id, full_name, specialization) VALUES (9001, 'Тестовый оператор', 'Оператор');
-INSERT INTO employee (id, full_name, specialization) VALUES (9002, 'Тестовый мастер', 'Мастер');
-INSERT INTO employee (id, full_name, specialization) VALUES (9003, 'Второй тестовый мастер', 'Мастер');
+
+INSERT INTO employee (id, full_name, specialization)
+OVERRIDING SYSTEM VALUE
+VALUES (9001, 'Тестовый оператор', 'Оператор');
+
+INSERT INTO employee (id, full_name, specialization)
+OVERRIDING SYSTEM VALUE
+VALUES (9002, 'Тестовый мастер', 'Мастер');
+
+INSERT INTO employee (id, full_name, specialization)
+OVERRIDING SYSTEM VALUE
+VALUES (9003, 'Второй тестовый мастер', 'Мастер');
+
 INSERT INTO request (id, equipment_id, operator_id, description, status)
+OVERRIDING SYSTEM VALUE
 VALUES (9001, 9001, 9001, 'Тестовая неисправность', 'Принята');
-INSERT INTO work (id, request_id, status, cost) VALUES (9001, 9001, 'Выполняется', 0);
+
+INSERT INTO work (id, request_id, status, cost)
+OVERRIDING SYSTEM VALUE
+VALUES (9001, 9001, 'Выполняется', 0);
+
 INSERT INTO repair (id, work_id, master_id, description, cost, status)
+OVERRIDING SYSTEM VALUE
 VALUES (9001, 9001, 9002, 'Тестовый ремонт', 100.00, 'Выполняется');
+
 INSERT INTO part (id, name, article, price, stock_quantity)
+OVERRIDING SYSTEM VALUE
 VALUES (9001, 'Тестовая запчасть', 'TEST-001', 50.00, 5);
 
 
@@ -122,7 +146,7 @@ SELECT pg_temp.assert_rejected(
         INSERT INTO master_assignment (request_id, employee_id, is_active) VALUES (9001, 9002, true);
         INSERT INTO master_assignment (request_id, employee_id, is_active) VALUES (9001, 9003, true);
       END
-      $inner$$$
+      $inner$$ -- Исправлено экранирование
 );
 
 -- 6. Частичный UNIQUE INDEX: повторный активный резерв той же запчасти (правило 9)
@@ -133,7 +157,7 @@ SELECT pg_temp.assert_rejected(
         INSERT INTO part_reservation (repair_id, part_id, quantity, status) VALUES (9001, 9001, 1, 'Активен');
         INSERT INTO part_reservation (repair_id, part_id, quantity, status) VALUES (9001, 9001, 1, 'Активен');
       END
-      $inner$$$
+      $inner$$ -- Исправлено экранирование
 );
 
 -- 7. CHECK: нулевая оплата со статусом «Оплачено» вместо «Не требуется» (правило 14)
