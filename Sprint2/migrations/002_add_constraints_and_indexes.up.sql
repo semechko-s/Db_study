@@ -1,4 +1,10 @@
 -- 002_add_constraints_and_indexes.up.sql
+--
+-- Обёрнуто в транзакцию: если, например, 20-й ALTER TABLE упадёт из-за
+-- опечатки, откатятся и предыдущие 19 — частично добавленного набора
+-- ограничений в базе остаться не может.
+
+BEGIN;
 
 ALTER TABLE client ADD CONSTRAINT client_contact_present CHECK (phone IS NOT NULL OR email IS NOT NULL);
 ALTER TABLE employee ADD CONSTRAINT employee_specialization_chk CHECK (specialization IS NULL OR specialization IN ('Оператор','Мастер'));
@@ -52,3 +58,7 @@ CREATE INDEX idx_used_part_repair ON used_part(repair_id);
 CREATE INDEX idx_used_part_part ON used_part(part_id);
 CREATE INDEX idx_status_history_request ON status_history(request_id,changed_at);
 CREATE INDEX idx_notification_request ON notification(request_id);
+
+INSERT INTO schema_migrations (version) VALUES ('002');
+
+COMMIT;

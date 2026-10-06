@@ -1,3 +1,7 @@
+-- 002_add_constraints_and_indexes.down.sql
+
+BEGIN;
+
 DROP INDEX IF EXISTS idx_notification_request;
 DROP INDEX IF EXISTS idx_status_history_request;
 DROP INDEX IF EXISTS idx_used_part_part;
@@ -50,3 +54,7 @@ ALTER TABLE request DROP CONSTRAINT IF EXISTS request_status_chk;
 ALTER TABLE equipment DROP CONSTRAINT IF EXISTS equipment_status_chk;
 ALTER TABLE employee DROP CONSTRAINT IF EXISTS employee_specialization_chk;
 ALTER TABLE client DROP CONSTRAINT IF EXISTS client_contact_present;
+
+DELETE FROM schema_migrations WHERE version = '002';
+
+COMMIT;
