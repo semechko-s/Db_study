@@ -1,0 +1,42 @@
+usage: generate_data.py [-h] [--mode {custom,development,load}] [--seed SEED]
+                        [--clients CLIENTS] [--employees EMPLOYEES]
+                        [--equipment EQUIPMENT] [--parts PARTS]
+                        [--requests REQUESTS] [--assignments ASSIGNMENTS]
+                        [--diagnoses DIAGNOSES] [--works WORKS]
+                        [--repairs REPAIRS] [--reservations RESERVATIONS]
+                        [--used-parts USED_PARTS] [--payments PAYMENTS]
+                        [--history HISTORY] [--notifications NOTIFICATIONS]
+                        [--batch-size BATCH_SIZE]
+
+Генерация тестовых данных для БД сервисного центра (Sprint2).
+
+optional arguments:
+  -h, --help            show this help message and exit
+  --mode {custom,development,load}
+                        custom — количества задаются аргументами;
+                        development/load — готовые профили.
+  --seed SEED           Seed генератора (по умолчанию 42).
+  --clients CLIENTS     Количество клиентов.
+  --employees EMPLOYEES
+                        Количество сотрудников.
+  --equipment EQUIPMENT
+                        Количество единиц оборудования.
+  --parts PARTS         Количество запчастей.
+  --requests REQUESTS   Количество заявок.
+  --assignments ASSIGNMENTS
+                        Количество активных назначений мастеров.
+  --diagnoses DIAGNOSES
+                        Количество записей диагностики.
+  --works WORKS         Количество работ.
+  --repairs REPAIRS     Количество ремонтов.
+  --reservations RESERVATIONS
+                        Количество резервирований запчастей.
+  --used-parts USED_PARTS
+                        Количество списаний запчастей.
+  --payments PAYMENTS   Количество платежей.
+  --history HISTORY     Количество записей истории статусов.
+  --notifications NOTIFICATIONS
+                        Количество уведомлений (в load режиме по умолчанию 3
+                        млн).
+  --batch-size BATCH_SIZE
+                        Размер пакета INSERT.
