@@ -56,6 +56,8 @@ PATRONYMICS = [
     "Дмитриевна", "Ивановна", "Михайловна", "Сергеевна",
 ]
 
+GENERATION_REFERENCE_TIME = datetime(2026, 10, 9, 12, 0, 0)
+
 EQUIPMENT_TYPES = [
     "Ноутбук", "Смартфон", "Планшет", "Стационарный компьютер",
     "Монитор", "Принтер", "Игровая консоль", "Роутер",
@@ -96,6 +98,21 @@ PART_NAMES = [
     "SSD-накопитель", "Термопаста", "Шлейф дисплея",
     "Сетевой адаптер", "Кабель USB", "Корпусная деталь",
 ]
+
+
+def weighted_choice(
+    rng: random.Random,
+    values: Sequence[str],
+    weights: Sequence[int],
+) -> str:
+    """Выбирает значение с учётом заданных весов."""
+    if len(values) != len(weights):
+        raise ValueError("Количество значений и весов должно совпадать.")
+    if not values or any(weight < 0 for weight in weights):
+        raise ValueError("Значения должны быть непустыми, веса — неотрицательными.")
+    if sum(weights) == 0:
+        raise ValueError("Сумма весов должна быть больше нуля.")
+    return rng.choices(values, weights=weights, k=1)[0]
 
 
 def make_full_name(rng: random.Random) -> str:
@@ -202,7 +219,7 @@ def generate_equipment(
         rows.append(
             (
                 rng.choice(client_ids),
-                rng.choice(EQUIPMENT_TYPES),
+                weighted_choice(rng, EQUIPMENT_TYPES, [30, 25, 12, 10, 7, 6, 5, 5]),
                 manufacturer,
                 model,
                 serial_number,
@@ -244,11 +261,11 @@ def generate_requests(
         raise ValueError("Нельзя создать заявки: нет сотрудников со специализацией 'Оператор'.")
 
     rows = []
-    now = datetime.now().replace(microsecond=0)
+    now = GENERATION_REFERENCE_TIME
     for _ in range(count):
         created_at = now - timedelta(days=rng.randint(0, 730), hours=rng.randint(0, 23))
-        received_at = created_at + timedelta(hours=rng.randint(0, 48)) if rng.random() < 0.85 else None
-        status = rng.choice(REQUEST_STATUSES)
+        received_at = min(now, created_at + timedelta(hours=rng.randint(0, 48))) if rng.random() < 0.85 else None
+        status = weighted_choice(rng, REQUEST_STATUSES, [8, 12, 15, 15, 20, 12, 14, 4])
         approved = status in ("В ремонте", "Готова", "Закрыта") or (
             status == "Ожидание" and rng.random() < 0.4
         )
@@ -303,7 +320,7 @@ def generate_assignments(
         )
     if count and not master_ids:
         raise ValueError("Нельзя создать назначения: в employee нет сотрудников со специализацией 'Мастер'.")
-    now = datetime.now().replace(microsecond=0)
+    now = GENERATION_REFERENCE_TIME
     selected = rng.sample(list(request_ids), count)
     rows = []
     for request_id in selected:
@@ -321,7 +338,7 @@ def generate_diagnoses(
         )
     if count and not master_ids:
         raise ValueError("Нельзя создать диагностику: в employee нет сотрудников со специализацией 'Мастер'.")
-    now = datetime.now().replace(microsecond=0)
+    now = GENERATION_REFERENCE_TIME
     selected = rng.sample(list(request_ids), count)
     results = [
         ("Неисправность обнаружена, требуется ремонт", "Износ или отказ одного из компонентов"),
@@ -342,7 +359,7 @@ def generate_works(
 ) -> list[tuple[object, ...]]:
     if count and not request_ids:
         raise ValueError("Нельзя создать работы без заявок.")
-    now = datetime.now().replace(microsecond=0)
+    now = GENERATION_REFERENCE_TIME
     rows = []
     for _ in range(count):
         status = rng.choice(WORK_STATUSES)
@@ -367,7 +384,7 @@ def generate_repairs(rng: random.Random, work_ids: Sequence[int], master_ids: Se
         raise ValueError("Нельзя создать ремонт без записей в work.")
     if count and not master_ids:
         raise ValueError("Нельзя создать ремонт: нет сотрудников со специализацией 'Мастер'.")
-    now = datetime.now().replace(microsecond=0)
+    now = GENERATION_REFERENCE_TIME
     rows = []
     for _ in range(count):
         status = rng.choice(REPAIR_STATUSES)
@@ -390,7 +407,7 @@ def generate_reservations(rng: random.Random, pairs: Sequence[tuple[int, int]], 
     if count > len(pairs):
         raise ValueError(f"Для {count} резервирований доступны только {len(pairs)} пар ремонт/запчасть.")
     selected = rng.sample(pairs, count)
-    now = datetime.now().replace(microsecond=0)
+    now = GENERATION_REFERENCE_TIME
     rows = []
     for repair_id, part_id in selected:
         status = rng.choice(RESERVATION_STATUSES)
@@ -405,7 +422,7 @@ def generate_used_parts(rng: random.Random, pairs: Sequence[tuple[int, int]], co
     if count > len(pairs):
         raise ValueError(f"Для {count} списаний доступны только {len(pairs)} пар ремонт/запчасть.")
     selected = rng.sample(pairs, count)
-    now = datetime.now().replace(microsecond=0)
+    now = GENERATION_REFERENCE_TIME
     return [(repair_id, part_id, rng.randint(1, 3), now - timedelta(days=rng.randint(0, 45))) for repair_id, part_id in selected]
 
 
@@ -413,7 +430,7 @@ def generate_payments(rng: random.Random, request_ids: Sequence[int], count: int
     if count > len(request_ids):
         raise ValueError(f"Нельзя создать {count} платежей: заявок доступно {len(request_ids)}.")
     selected = rng.sample(list(request_ids), count)
-    now = datetime.now().replace(microsecond=0)
+    now = GENERATION_REFERENCE_TIME
     rows = []
     for request_id in selected:
         amount = round(rng.uniform(100, 70000), 2) if rng.random() < 0.9 else 0
@@ -431,10 +448,10 @@ def generate_status_history(
     if count and not request_dates:
         raise ValueError("Нельзя создать историю статусов без заявок.")
     rows = []
-    now = datetime.now().replace(microsecond=0)
+    now = GENERATION_REFERENCE_TIME
     for _ in range(count):
         request_id, created_at = rng.choice(request_dates)
-        new_status = rng.choice(REQUEST_STATUSES)
+        new_status = weighted_choice(rng, REQUEST_STATUSES, [8, 12, 15, 15, 20, 12, 14, 4])
         old_status = rng.choice([status for status in REQUEST_STATUSES if status != new_status]) if rng.random() < 0.9 else None
         latest_offset = max(0, int((now - created_at).total_seconds()))
         elapsed_seconds = rng.randint(0, latest_offset) if latest_offset else 0
@@ -447,7 +464,7 @@ def generate_notifications(rng: random.Random, request_ids: Sequence[int], count
     """Yield notification rows lazily, so millions of rows are not held in RAM."""
     if count and not request_ids:
         raise ValueError("Нельзя создать уведомления без заявок.")
-    now = datetime.now().replace(microsecond=0)
+    now = GENERATION_REFERENCE_TIME
     delivery_statuses = ["Ожидает отправки", "Отправлено", "Ошибка"]
     for _ in range(count):
         yield (rng.choice(request_ids), rng.choice(NOTIFICATION_EVENTS), now - timedelta(days=rng.randint(0, 365), hours=rng.randint(0, 23)), rng.choice(delivery_statuses))
