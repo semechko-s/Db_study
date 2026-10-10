@@ -1,20 +1,6 @@
 -- 001_create_base_schema.up.sql
--- Таблицы, PK и FK. Ограничения CHECK/индексы добавляются миграцией 002.
---
--- Обёрнуто в транзакцию: если любой CREATE TABLE ниже упадёт, откатятся
--- и все уже выполненные в этом запуске CREATE TABLE — частично применённой
--- миграции 001 в базе остаться не может.
---
--- schema_migrations — реестр применённых миграций. Отметка о версии '001'
--- делается последней строкой, внутри той же транзакции: либо схема и
--- отметка коммитятся вместе, либо откатывается всё вместе.
 
 BEGIN;
-
-CREATE TABLE IF NOT EXISTS schema_migrations (
-    version    TEXT PRIMARY KEY,
-    applied_at TIMESTAMP NOT NULL DEFAULT now()
-);
 
 CREATE TABLE client (
  id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -91,6 +77,5 @@ CREATE TABLE notification (
  created_at TIMESTAMP NOT NULL DEFAULT now(), delivery_status VARCHAR(30) NOT NULL DEFAULT 'Ожидает отправки'
 );
 
-INSERT INTO schema_migrations (version) VALUES ('001');
 
 COMMIT;

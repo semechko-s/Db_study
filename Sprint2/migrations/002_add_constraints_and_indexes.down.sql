@@ -55,6 +55,5 @@ ALTER TABLE equipment DROP CONSTRAINT IF EXISTS equipment_status_chk;
 ALTER TABLE employee DROP CONSTRAINT IF EXISTS employee_specialization_chk;
 ALTER TABLE client DROP CONSTRAINT IF EXISTS client_contact_present;
 
-DELETE FROM schema_migrations WHERE version = '002';
 
 COMMIT;

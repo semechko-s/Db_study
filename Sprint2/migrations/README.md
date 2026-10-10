@@ -1,23 +1,73 @@
-# Миграции базы данных
+# Миграции базы данных service_center
 
-В данном каталоге находятся версионные SQL-миграции базы данных
-сервисного центра.
+Для версионирования схемы используется **golang-migrate**.
 
 ## Структура
 
-- `001_create_base_schema.up.sql` — создание основных таблиц базы данных,
-  первичных и внешних ключей.
-- `001_create_base_schema.down.sql` — откат первой миграции.
-- `002_add_constraints_and_indexes.up.sql` — добавление ограничений
-  целостности (`CHECK`, `UNIQUE`) и индексов.
-- `002_add_constraints_and_indexes.down.sql` — откат второй миграции.
+migrations/
+├── 001_create_base_schema.up.sql
+├── 001_create_base_schema.down.sql
+├── 002_add_constraints_and_indexes.up.sql
+└── 002_add_constraints_and_indexes.down.sql
 
-## Запуск миграций
+- `*.up.sql` — применяет миграцию.
+- `*.down.sql` — откатывает миграцию.
+- Номер в имени файла задаёт порядок миграций.
+- Таблицу `schema_migrations` вручную создавать и изменять не нужно: её ведёт `golang-migrate`.
 
-Миграции выполняются последовательно.
+## Установка
 
-## Первая миграция:
-psql -d service_center -f 001_create_base_schema.up.sql
+Для управления версиями схемы PostgreSQL используется [golang-migrate].
 
-## Вторая миграция:
-psql -d service_center -f 002_add_constraints_and_indexes.up.sql
+Проверка:
+
+migrate -version
+
+## Основные команды
+
+Из корня проекта:
+
+make createdb
+make up
+make version
+make down
+make down-all
+
+### Применить все миграции
+
+make up
+
+`golang-migrate` сам определяет текущую версию и применяет неприменённые миграции по порядку.
+
+### Откатить последнюю миграцию
+
+make down
+
+### Откатить все миграции
+
+make down-all
+
+### Посмотреть текущую версию
+
+make version
+
+### Полностью пересоздать схему
+
+make redo
+
+### Удалить базу
+
+make dropdb
+
+## Рекомендуемая проверка перед сдачей
+
+make dropdb
+make createdb
+make up
+make version
+make down
+make version
+make up
+make version
+
+После первого `make up` версия должна быть `2`. После `make down` — `1`. После повторного `make up` — снова `2`.

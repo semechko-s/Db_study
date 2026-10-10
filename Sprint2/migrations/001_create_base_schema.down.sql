@@ -1,7 +1,4 @@
 -- 001_create_base_schema.down.sql
---
--- Обёрнуто в транзакцию по той же причине, что и up: откат либо проходит
--- целиком, либо не проходит вовсе — частично раскаченного состояния не будет.
 
 BEGIN;
 
@@ -20,8 +17,5 @@ DROP TABLE IF EXISTS equipment;
 DROP TABLE IF EXISTS employee;
 DROP TABLE IF EXISTS client;
 
-DELETE FROM schema_migrations WHERE version = '001';
--- 001 создала реестр — она же его и убирает при полном откате до нуля.
-DROP TABLE IF EXISTS schema_migrations;
 
 COMMIT;
