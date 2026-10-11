@@ -1,0 +1,54 @@
+                                                         QUERY PLAN                                                          
+-----------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=2.04..2.05 rows=1 width=8) (actual time=0.037..0.037 rows=1.00 loops=1)
+   Buffers: shared hit=2
+   ->  Nested Loop  (cost=0.00..2.04 rows=1 width=4) (actual time=0.028..0.028 rows=1.00 loops=1)
+         Join Filter: (p.id = pr.part_id)
+         Buffers: shared hit=2
+         ->  Seq Scan on part_reservation pr  (cost=0.00..1.01 rows=1 width=12) (actual time=0.019..0.019 rows=1.00 loops=1)
+               Filter: ((status)::text = 'Активен'::text)
+               Buffers: shared hit=1
+         ->  Seq Scan on part p  (cost=0.00..1.01 rows=1 width=8) (actual time=0.007..0.007 rows=1.00 loops=1)
+               Filter: ((article)::text = 'BR09-CONCURRENCY-TEST'::text)
+               Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=313 read=2
+ Planning Time: 2.806 ms
+ Execution Time: 0.084 ms
+(15 rows)
+
+                                                                  QUERY PLAN                                                                   
+-----------------------------------------------------------------------------------------------------------------------------------------------
+ Sort  (cost=5.13..5.14 rows=1 width=90) (actual time=0.062..0.063 rows=1.00 loops=1)
+   Sort Key: pr.reserved_at DESC
+   Sort Method: quicksort  Memory: 25kB
+   Buffers: shared hit=8
+   ->  Nested Loop  (cost=0.00..5.12 rows=1 width=90) (actual time=0.040..0.041 rows=1.00 loops=1)
+         Join Filter: (w.request_id = r.id)
+         Buffers: shared hit=5
+         ->  Nested Loop  (cost=0.00..4.10 rows=1 width=90) (actual time=0.024..0.025 rows=1.00 loops=1)
+               Join Filter: (rp.work_id = w.id)
+               Buffers: shared hit=4
+               ->  Nested Loop  (cost=0.00..3.08 rows=1 width=90) (actual time=0.018..0.019 rows=1.00 loops=1)
+                     Join Filter: (rp.id = pr.repair_id)
+                     Buffers: shared hit=3
+                     ->  Nested Loop  (cost=0.00..2.04 rows=1 width=82) (actual time=0.009..0.009 rows=1.00 loops=1)
+                           Join Filter: (p.id = pr.part_id)
+                           Buffers: shared hit=2
+                           ->  Seq Scan on part_reservation pr  (cost=0.00..1.01 rows=1 width=51) (actual time=0.006..0.006 rows=1.00 loops=1)
+                                 Filter: ((status)::text = 'Активен'::text)
+                                 Buffers: shared hit=1
+                           ->  Seq Scan on part p  (cost=0.00..1.01 rows=1 width=47) (actual time=0.001..0.001 rows=1.00 loops=1)
+                                 Buffers: shared hit=1
+                     ->  Seq Scan on repair rp  (cost=0.00..1.02 rows=2 width=16) (actual time=0.008..0.008 rows=1.00 loops=1)
+                           Buffers: shared hit=1
+               ->  Seq Scan on work w  (cost=0.00..1.01 rows=1 width=16) (actual time=0.005..0.005 rows=1.00 loops=1)
+                     Buffers: shared hit=1
+         ->  Seq Scan on request r  (cost=0.00..1.01 rows=1 width=8) (actual time=0.015..0.015 rows=1.00 loops=1)
+               Buffers: shared hit=1
+ Planning:
+   Buffers: shared hit=162
+ Planning Time: 1.050 ms
+ Execution Time: 0.095 ms
+(31 rows)
+
