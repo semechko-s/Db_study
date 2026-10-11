@@ -1,67 +1,71 @@
+                                                                QUERY PLAN                                                                 
+-------------------------------------------------------------------------------------------------------------------------------------------
+ Aggregate  (cost=11.66..11.67 rows=1 width=8) (actual time=0.223..0.239 rows=1 loops=1)
+   Buffers: shared hit=5
+   ->  Hash Join  (cost=8.30..11.66 rows=1 width=4) (actual time=0.219..0.229 rows=0 loops=1)
+         Hash Cond: (pr.part_id = p.id)
+         Buffers: shared hit=5
+         ->  Seq Scan on part_reservation pr  (cost=0.00..3.25 rows=39 width=12) (actual time=0.008..0.101 rows=39 loops=1)
+               Filter: ((status)::text = 'Активен'::text)
+               Rows Removed by Filter: 61
+               Buffers: shared hit=2
+         ->  Hash  (cost=8.29..8.29 rows=1 width=8) (actual time=0.042..0.046 rows=1 loops=1)
+               Buckets: 1024  Batches: 1  Memory Usage: 9kB
+               Buffers: shared hit=3
+               ->  Index Scan using idx_part_article on part p  (cost=0.28..8.29 rows=1 width=8) (actual time=0.028..0.031 rows=1 loops=1)
+                     Index Cond: ((article)::text = 'GEN-PART-00000001'::text)
+                     Buffers: shared hit=3
+ Planning:
+   Buffers: shared hit=324
+ Planning Time: 1.183 ms
+ Execution Time: 0.343 ms
+(19 rows)
+
                                                                               QUERY PLAN                                                                              
 ----------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Aggregate  (cost=19.43..19.44 rows=1 width=8) (actual time=0.029..0.029 rows=1.00 loops=1)
-   Buffers: shared hit=3
-   ->  Nested Loop  (cost=0.14..19.42 rows=1 width=4) (actual time=0.020..0.021 rows=1.00 loops=1)
-         Buffers: shared hit=3
-         ->  Seq Scan on part p  (cost=0.00..11.25 rows=1 width=8) (actual time=0.010..0.010 rows=1.00 loops=1)
-               Filter: ((article)::text = 'BR09-CONCURRENCY-TEST'::text)
-               Buffers: shared hit=1
-         ->  Index Scan using idx_part_reservation_active_part on part_reservation pr  (cost=0.14..8.16 rows=1 width=12) (actual time=0.009..0.009 rows=1.00 loops=1)
-               Index Cond: (part_id = p.id)
-               Index Searches: 1
-               Buffers: shared hit=2
- Planning:
-   Buffers: shared hit=252
- Planning Time: 2.125 ms
- Execution Time: 0.070 ms
-(15 rows)
-
-                                                                                      QUERY PLAN                                                                                      
---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
- Sort  (cost=39.41..39.41 rows=3 width=630) (actual time=0.409..0.414 rows=1.00 loops=1)
+ Sort  (cost=71.67..71.76 rows=39 width=87) (actual time=6.991..7.105 rows=39 loops=1)
    Sort Key: pr.reserved_at DESC
-   Sort Method: quicksort  Memory: 25kB
-   Buffers: shared hit=11 dirtied=2
-   ->  Nested Loop  (cost=23.03..39.38 rows=3 width=630) (actual time=0.369..0.378 rows=1.00 loops=1)
-         Buffers: shared hit=8 dirtied=2
-         ->  Nested Loop  (cost=22.89..38.62 rows=3 width=630) (actual time=0.118..0.126 rows=1.00 loops=1)
-               Buffers: shared hit=6 dirtied=1
-               ->  Hash Join  (cost=22.74..37.72 rows=3 width=630) (actual time=0.059..0.066 rows=1.00 loops=1)
-                     Hash Cond: (rp.id = pr.repair_id)
-                     Buffers: shared hit=4
-                     ->  Seq Scan on repair rp  (cost=0.00..13.60 rows=360 width=16) (actual time=0.010..0.011 rows=2.00 loops=1)
-                           Buffers: shared hit=1
-                     ->  Hash  (cost=22.70..22.70 rows=3 width=622) (actual time=0.039..0.042 rows=1.00 loops=1)
-                           Buckets: 1024  Batches: 1  Memory Usage: 9kB
-                           Buffers: shared hit=3
-                           ->  Hash Join  (cost=11.31..22.70 rows=3 width=622) (actual time=0.035..0.038 rows=1.00 loops=1)
-                                 Hash Cond: (p.id = pr.part_id)
-                                 Buffers: shared hit=3
-                                 ->  Seq Scan on part p  (cost=0.00..11.00 rows=100 width=524) (actual time=0.008..0.008 rows=1.00 loops=1)
-                                       Buffers: shared hit=1
-                                 ->  Hash  (cost=11.27..11.27 rows=3 width=114) (actual time=0.016..0.018 rows=1.00 loops=1)
-                                       Buckets: 1024  Batches: 1  Memory Usage: 9kB
-                                       Buffers: shared hit=2
-                                       ->  Bitmap Heap Scan on part_reservation pr  (cost=4.16..11.27 rows=3 width=114) (actual time=0.010..0.010 rows=1.00 loops=1)
-                                             Recheck Cond: ((status)::text = 'Активен'::text)
-                                             Heap Blocks: exact=1
-                                             Buffers: shared hit=2
-                                             ->  Bitmap Index Scan on idx_part_reservation_active_part  (cost=0.00..4.16 rows=3 width=0) (actual time=0.002..0.002 rows=1.00 loops=1)
-                                                   Index Searches: 1
-                                                   Buffers: shared hit=1
-               ->  Index Scan using work_pkey on work w  (cost=0.15..0.30 rows=1 width=16) (actual time=0.056..0.056 rows=1.00 loops=1)
-                     Index Cond: (id = rp.work_id)
-                     Index Searches: 1
-                     Buffers: shared hit=2 dirtied=1
-         ->  Index Only Scan using request_pkey on request r  (cost=0.14..0.25 rows=1 width=8) (actual time=0.248..0.248 rows=1.00 loops=1)
-               Index Cond: (id = w.request_id)
-               Heap Fetches: 1
-               Index Searches: 1
-               Buffers: shared hit=2 dirtied=1
+   Sort Method: quicksort  Memory: 29kB
+   Buffers: shared hit=38
+   ->  Hash Join  (cost=42.25..70.64 rows=39 width=87) (actual time=4.043..6.922 rows=39 loops=1)
+         Hash Cond: (p.id = pr.part_id)
+         Buffers: shared hit=35
+         ->  Seq Scan on part p  (cost=0.00..23.00 rows=1000 width=42) (actual time=0.004..1.433 rows=1000 loops=1)
+               Buffers: shared hit=13
+         ->  Hash  (cost=41.76..41.76 rows=39 width=61) (actual time=3.897..3.946 rows=39 loops=1)
+               Buckets: 1024  Batches: 1  Memory Usage: 12kB
+               Buffers: shared hit=22
+               ->  Hash Join  (cost=24.49..41.76 rows=39 width=61) (actual time=2.319..3.872 rows=39 loops=1)
+                     Hash Cond: (r.id = w.request_id)
+                     Buffers: shared hit=22
+                     ->  Seq Scan on request r  (cost=0.00..15.00 rows=500 width=8) (actual time=0.004..0.738 rows=500 loops=1)
+                           Buffers: shared hit=10
+                     ->  Hash  (cost=24.01..24.01 rows=39 width=61) (actual time=2.277..2.316 rows=39 loops=1)
+                           Buckets: 1024  Batches: 1  Memory Usage: 12kB
+                           Buffers: shared hit=12
+                           ->  Hash Join  (cost=15.49..24.01 rows=39 width=61) (actual time=1.272..2.236 rows=39 loops=1)
+                                 Hash Cond: (w.id = rp.work_id)
+                                 Buffers: shared hit=12
+                                 ->  Seq Scan on work w  (cost=0.00..7.00 rows=300 width=16) (actual time=0.004..0.435 rows=300 loops=1)
+                                       Buffers: shared hit=4
+                                 ->  Hash  (cost=15.00..15.00 rows=39 width=61) (actual time=1.248..1.276 rows=39 loops=1)
+                                       Buckets: 1024  Batches: 1  Memory Usage: 12kB
+                                       Buffers: shared hit=8
+                                       ->  Hash Join  (cost=3.74..15.00 rows=39 width=61) (actual time=0.214..1.205 rows=39 loops=1)
+                                             Hash Cond: (rp.id = pr.repair_id)
+                                             Buffers: shared hit=8
+                                             ->  Seq Scan on repair rp  (cost=0.00..9.00 rows=300 width=16) (actual time=0.007..0.451 rows=300 loops=1)
+                                                   Buffers: shared hit=6
+                                             ->  Hash  (cost=3.25..3.25 rows=39 width=53) (actual time=0.179..0.183 rows=39 loops=1)
+                                                   Buckets: 1024  Batches: 1  Memory Usage: 12kB
+                                                   Buffers: shared hit=2
+                                                   ->  Seq Scan on part_reservation pr  (cost=0.00..3.25 rows=39 width=53) (actual time=0.005..0.105 rows=39 loops=1)
+                                                         Filter: ((status)::text = 'Активен'::text)
+                                                         Rows Removed by Filter: 61
+                                                         Buffers: shared hit=2
  Planning:
-   Buffers: shared hit=208
- Planning Time: 1.485 ms
- Execution Time: 0.487 ms
+   Buffers: shared hit=194
+ Planning Time: 0.723 ms
+ Execution Time: 7.227 ms
 (44 rows)
 

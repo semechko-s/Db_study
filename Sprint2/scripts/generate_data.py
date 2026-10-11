@@ -399,19 +399,46 @@ def generate_repairs(rng: random.Random, work_ids: Sequence[int], master_ids: Se
     return rows
 
 
-def generate_reservations(rng: random.Random, pairs: Sequence[tuple[int, int]], count: int) -> list[tuple[object, ...]]:
+def generate_reservations(
+    rng: random.Random,
+    pairs: Sequence[tuple[int, int]],
+    count: int,
+    part_stocks: dict[int, int] | None = None,
+) -> list[tuple[object, ...]]:
     if count and not pairs:
         raise ValueError("Для резервирования нужны свободные пары ремонт/запчасть.")
-    # Передаются только пары, которые не конфликтуют с уже активными резервированиями.
+
     pairs = list(pairs)
     if count > len(pairs):
-        raise ValueError(f"Для {count} резервирований доступны только {len(pairs)} пар ремонт/запчасть.")
+        raise ValueError(
+            f"Для {count} резервирований доступны только {len(pairs)} пар ремонт/запчасть."
+        )
+
     selected = rng.sample(pairs, count)
     now = GENERATION_REFERENCE_TIME
     rows = []
+    remaining = dict(part_stocks or {})
+
     for repair_id, part_id in selected:
         status = rng.choice(RESERVATION_STATUSES)
-        rows.append((repair_id, part_id, rng.randint(1, 4), now - timedelta(days=rng.randint(0, 60)), status))
+        quantity = rng.randint(1, 4)
+
+        if status == "Активен" and part_stocks is not None:
+            stock = remaining.get(part_id, 0)
+            if stock <= 0:
+                status = "Отменён"
+            else:
+                quantity = min(quantity, stock)
+                remaining[part_id] = stock - quantity
+
+        rows.append((
+            repair_id,
+            part_id,
+            quantity,
+            now - timedelta(days=rng.randint(0, 60)),
+            status,
+        ))
+
     return rows
 
 
@@ -605,9 +632,37 @@ def main() -> int:
                 all_repair_ids = fetch_ids(cursor, "repair")
                 all_part_ids = fetch_ids(cursor, "part")
 
-                cursor.execute("SELECT r.id, p.id FROM repair r CROSS JOIN part p WHERE NOT EXISTS (SELECT 1 FROM part_reservation pr WHERE pr.repair_id = r.id AND pr.part_id = p.id AND pr.status = 'Активен') ORDER BY r.id, p.id")
-                available_reservation_pairs = [(int(row[0]), int(row[1])) for row in cursor.fetchall()]
-                rows = generate_reservations(rng, available_reservation_pairs, args.reservations)
+                cursor.execute(
+                    """
+                    SELECT r.id, p.id
+                    FROM repair r
+                    CROSS JOIN part p
+                    WHERE NOT EXISTS (
+                        SELECT 1
+                        FROM part_reservation pr
+                        WHERE pr.repair_id = r.id
+                          AND pr.part_id = p.id
+                          AND pr.status = 'Активен'
+                    )
+                    ORDER BY r.id, p.id
+                    """
+                )
+                available_reservation_pairs = [
+                    (int(row[0]), int(row[1])) for row in cursor.fetchall()
+                ]
+
+                cursor.execute("SELECT id, stock_quantity FROM part")
+                part_stocks = {
+                    int(row[0]): int(row[1])
+                    for row in cursor.fetchall()
+                }
+
+                rows = generate_reservations(
+                    rng,
+                    available_reservation_pairs,
+                    args.reservations,
+                    part_stocks,
+                )
                 ids = insert_many(cursor, "part_reservation", ("repair_id", "part_id", "quantity", "reserved_at", "status"), rows, args.batch_size)
                 print(f"part_reservation: добавлено {len(ids)}")
                 cursor.execute("SELECT r.id, p.id FROM repair r CROSS JOIN part p WHERE NOT EXISTS (SELECT 1 FROM used_part up WHERE up.repair_id = r.id AND up.part_id = p.id) ORDER BY r.id, p.id")

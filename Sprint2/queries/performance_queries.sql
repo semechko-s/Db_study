@@ -3,7 +3,7 @@ EXPLAIN (ANALYZE, BUFFERS)
 SELECT COALESCE(SUM(pr.quantity), 0) AS reserved_quantity
 FROM part_reservation pr
 JOIN part p ON p.id = pr.part_id
-WHERE p.article = 'BR09-CONCURRENCY-TEST'
+WHERE p.article = 'GEN-PART-00000001'
   AND pr.status = 'Активен';
 
 -- Запрос 2. Отчёт по активным резервам.

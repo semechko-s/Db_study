@@ -1,45 +1,75 @@
 # Makefile для базы данных service_center
 # Миграциями управляет golang-migrate.
+ifneq (,$(wildcard .env))
+include .env
+export
+endif
 
-DB           ?= service_center
-PSQL_USER    ?= $(USER)
-PSQL_HOST    ?= localhost
-PSQL_PORT    ?= 5432
+.DEFAULT_GOAL := help
 
-DATABASE_URL := postgres://$(PSQL_USER)@$(PSQL_HOST):$(PSQL_PORT)/$(DB)?sslmode=disable
+
+DB             ?= service_center
+PSQL_USER      ?= $(USER)
+PSQL_HOST      ?= localhost
+PSQL_PORT      ?= 5432
+
+DATABASE_URL   = postgres://$(PSQL_USER)@$(PSQL_HOST):$(PSQL_PORT)/$(DB)?sslmode=disable
+
 MIGRATIONS_DIR := migrations
-TEST_DIR := test
+TEST_DIR       := test
+
 PSQL := psql -v ON_ERROR_STOP=1 -U $(PSQL_USER) -h $(PSQL_HOST) -p $(PSQL_PORT) -d $(DB)
 
-.PHONY: up down down-all version force redo createdb dropdb test-data test full-check
 
-# Применить все доступные миграции.
-up:
+.PHONY: help up down down-all version force redo createdb dropdb test-data test full-check
+
+
+help: ## Показать список доступных команд
+	@echo ""
+	@echo "============================================"
+	@echo "       Service Center - Database"
+	@echo "============================================"
+	@echo ""
+	@echo "Перед использованием Makefile необходимо заполнить файл .env"
+	@echo ""
+	@echo "Использование:"
+	@echo "  make <команда>"
+	@echo ""
+	@echo "Доступные команды:"
+	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | \
+		awk 'BEGIN {FS = ":.*## "} {printf "  %-14s %s\n", $$1, $$2}'
+	@echo ""
+	@echo "Настройки можно переопределить:"
+	@echo "  make up PSQL_USER=имя DB=имя_базы"
+	@echo ""
+
+
+up: createdb ## Создать базу при необходимости и применить миграции
 	migrate -path $(MIGRATIONS_DIR) -database "$(DATABASE_URL)" up
 
-# Откатить одну последнюю миграцию.
-down:
+down: ## Откатить одну последнюю миграцию
 	migrate -path $(MIGRATIONS_DIR) -database "$(DATABASE_URL)" down 1
 
-# Откатить все миграции.
-down-all:
+down-all: ## Откатить все миграции
 	migrate -path $(MIGRATIONS_DIR) -database "$(DATABASE_URL)" down
 
-# Показать текущую версию схемы.
-version:
+version: ## Показать текущую версию схемы
 	migrate -path $(MIGRATIONS_DIR) -database "$(DATABASE_URL)" version
 
-# Принудительно установить номер версии (использовать только для восстановления состояния).
-force:
+force: ## Принудительно установить версию (make force VERSION=N)
+	@test -n "$(VERSION)" || (echo "Ошибка: укажи VERSION=N"; exit 1)
 	migrate -path $(MIGRATIONS_DIR) -database "$(DATABASE_URL)" force $(VERSION)
 
-# Полностью пересоздать схему.
-redo: down-all up
+redo: ## Откатить все миграции и применить заново
+	$(MAKE) down-all
+	$(MAKE) up
 
-# Создать базу данных.
-createdb:
-	createdb -U $(PSQL_USER) -h $(PSQL_HOST) -p $(PSQL_PORT) $(DB)
+# -------------------- База данных ---------------------------
 
-# Удалить базу данных.
-dropdb:
+createdb: ## Создать базу данных, если её ещё нет
+	@createdb -U $(PSQL_USER) -h $(PSQL_HOST) -p $(PSQL_PORT) $(DB) 2>/dev/null || \
+		$(PSQL) -tAc "SELECT 1" >/dev/null 2>&1 || \
+		(echo "Ошибка подключения к PostgreSQL или создания базы $(DB)"; exit 1)
+
+dropdb: ## Удалить базу данных
 	dropdb -U $(PSQL_USER) -h $(PSQL_HOST) -p $(PSQL_PORT) $(DB)
