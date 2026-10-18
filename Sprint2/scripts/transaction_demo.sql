@@ -1,126 +1,217 @@
+
 -- ============================================================
 -- Система сервисного центра — демонстрация транзакций
--- (Спринт 3, обязательный пункт: многошаговая транзакция,
--- успешный COMMIT и контролируемый ROLLBACK)
 --
--- Файл состоит из трёх частей:
---   0. Подготовка данных (вне транзакции, просто чтобы было
---      с чем работать — клиент, устройство, мастер, заявка).
---   1. Успешная транзакция — завершение ремонта. Меняет 4 связанные
---      таблицы одной транзакцией и завершается COMMIT.
---   2. Неудачная транзакция — пытаемся списать больше запчастей,
---      чем есть на складе. База сама останавливает операцию
---      (нарушено ограничение CHECK), и мы завершаем её ROLLBACK.
+-- Часть 0. Подготовка данных с автоматической генерацией ID.
+-- Часть 1. Успешное завершение ремонта и COMMIT.
+-- Часть 2. Неудачная операция и полный ROLLBACK.
 --
--- Запуск: psql -d service_center -f scripts/transaction_demo.sql
+-- Существующие записи не удаляются.
+-- Фиксированные значения первичных ключей не используются.
+--
+-- Запуск:
+-- psql -d service_center -f scripts/transaction_demo.sql
 -- ============================================================
 
+\set ON_ERROR_STOP on
 
--- ------------------------------------------------------------
+-- ============================================================
 -- ЧАСТЬ 0. Подготовка данных
--- Это обычные отдельные команды, не транзакция — просто готовим,
--- с чем будем работать дальше.
--- ------------------------------------------------------------
+-- ============================================================
 
-INSERT INTO client (id, full_name, phone)
-OVERRIDING SYSTEM VALUE
-VALUES (50, 'Петров Пётр Петрович', '+79990000050');
+-- Создаём клиента.
+INSERT INTO client (full_name, phone)
+VALUES (
+    'Петров Пётр Петрович',
+    format('+7999%s', lpad(txid_current()::text, 7, '0'))
+)
+RETURNING id
+\gset client_
 
-INSERT INTO equipment (id, client_id, type, manufacturer, model, status)
-OVERRIDING SYSTEM VALUE
-VALUES (50, 50, 'Принтер', 'HP', 'LaserJet', 'На ремонте');
+-- Создаём устройство.
+INSERT INTO equipment
+    (client_id, type, manufacturer, model, status)
+VALUES (
+    :client_id,
+    'Принтер',
+    'HP',
+    'LaserJet',
+    'На ремонте'
+)
+RETURNING id
+\gset equipment_
 
-INSERT INTO employee (id, full_name, specialization)
-OVERRIDING SYSTEM VALUE
-VALUES (50, 'Мастер Сергей', 'Мастер');
+-- Создаём мастера.
+INSERT INTO employee (full_name, specialization)
+VALUES (
+    'Мастер Сергей',
+    'Мастер'
+)
+RETURNING id
+\gset master_
 
-INSERT INTO part (id, name, article, price, stock_quantity)
-OVERRIDING SYSTEM VALUE
-VALUES (50, 'Картридж', 'CART-050', 1200.00, 2);
+-- Создаём запчасть с начальным остатком 2 штуки.
+INSERT INTO part (name, article, price, stock_quantity)
+VALUES (
+    'Картридж',
+    format('CART-%s', txid_current()),
+    1200.00,
+    2
+)
+RETURNING id
+\gset part_
 
-INSERT INTO request (id, equipment_id, description, status, client_approved, approval_at)
-OVERRIDING SYSTEM VALUE
-VALUES (50, 50, 'Не печатает', 'В ремонте', true, now());
+-- Создаём заявку.
+INSERT INTO request
+    (equipment_id, description, status, client_approved, approval_at)
+VALUES (
+    :equipment_id,
+    'Не печатает',
+    'В ремонте',
+    true,
+    now()
+)
+RETURNING id
+\gset request_
 
-INSERT INTO work (id, request_id, status, cost)
-OVERRIDING SYSTEM VALUE
-VALUES (50, 50, 'Выполняется', 1200.00);
+-- Создаём работу.
+INSERT INTO work (request_id, status, cost)
+VALUES (
+    :request_id,
+    'Выполняется',
+    1200.00
+)
+RETURNING id
+\gset work_
 
-INSERT INTO repair (id, work_id, master_id, description, cost, status, started_at)
-OVERRIDING SYSTEM VALUE
-VALUES (50, 50, 50, 'Замена картриджа', 1200.00, 'Выполняется', now());
-
+-- Создаём ремонт.
+INSERT INTO repair
+    (work_id, master_id, description, cost, status, started_at)
+VALUES (
+    :work_id,
+    :master_id,
+    'Замена картриджа',
+    1200.00,
+    'Выполняется',
+    now()
+)
+RETURNING id
+\gset repair_
 
 -- ============================================================
 -- ЧАСТЬ 1. Успешная транзакция (COMMIT)
--- Бизнес-процесс: мастер завершает ремонт. Это должно произойти
--- как одно целое действие — либо выполнятся все четыре шага,
--- либо ни один. Поэтому оборачиваем их в одну транзакцию.
+--
+-- Завершаем ремонт, фиксируем использованную запчасть,
+-- уменьшаем остаток и завершаем работу.
+-- Все изменения сохраняются одной транзакцией.
 -- ============================================================
 
 BEGIN;
 
--- Шаг 1. Ремонт помечается завершённым.
+-- Шаг 1. Завершаем ремонт.
 UPDATE repair
-SET status = 'Завершён', result = 'Картридж заменён', ended_at = now()
-WHERE id = 50;
+SET status = 'Завершён',
+    result = 'Картридж заменён',
+    ended_at = now()
+WHERE id = :repair_id;
 
--- Шаг 2. Запчасть списывается со склада как использованная.
-INSERT INTO used_part (repair_id, part_id, quantity, written_off_at)
-VALUES (50, 50, 1, now());
+-- Шаг 2. Фиксируем использование одной запчасти.
+INSERT INTO used_part
+    (repair_id, part_id, quantity, written_off_at)
+VALUES (
+    :repair_id,
+    :part_id,
+    1,
+    now()
+);
 
--- Шаг 3. Остаток на складе уменьшается на использованное количество.
+-- Шаг 3. Уменьшаем остаток на складе.
 UPDATE part
 SET stock_quantity = stock_quantity - 1
-WHERE id = 50;
+WHERE id = :part_id;
 
--- Шаг 4. Работа тоже завершена, итоговая стоимость зафиксирована.
+-- Шаг 4. Завершаем работу.
 UPDATE work
-SET status = 'Завершена', ended_at = now()
-WHERE id = 50;
+SET status = 'Завершена',
+    ended_at = now()
+WHERE id = :work_id;
 
--- Все четыре шага прошли без ошибок — фиксируем их все разом.
+-- Сохраняем все четыре изменения.
 COMMIT;
 
--- Проверка: после COMMIT все изменения видны в базе.
-SELECT id, status, result FROM repair WHERE id = 50;
-SELECT id, stock_quantity FROM part WHERE id = 50;
+-- Проверяем результат первой транзакции.
+SELECT id, status, result
+FROM repair
+WHERE id = :repair_id;
 
+-- Остаток должен быть равен 1.
+SELECT id, stock_quantity
+FROM part
+WHERE id = :part_id;
 
 -- ============================================================
 -- ЧАСТЬ 2. Неудачная транзакция (ROLLBACK)
--- Пытаемся списать 5 картриджей, хотя на складе осталось только 1
--- (мы только что списали один в части 1, было 2, стало 1).
--- Это нарушает ограничение part_stock_quantity_chk (остаток не
--- может быть отрицательным), поэтому база откажется выполнять
--- этот шаг. Транзакция прерывается, и мы явно её откатываем.
 -- ============================================================
 
 BEGIN;
 
--- Шаг 1. Это пройдёт без проблем — просто запись о списании.
-INSERT INTO used_part (repair_id, part_id, quantity, written_off_at)
-VALUES (50, 50, 5, now());
+-- Добавляем запись с количеством 5.
+-- ON CONFLICT позволяет не падать, если эта пара уже существует.
+INSERT INTO used_part
+    (repair_id, part_id, quantity, written_off_at)
+VALUES (
+    :repair_id,
+    :part_id,
+    5,
+    now()
+)
+ON CONFLICT (repair_id, part_id) DO NOTHING;
 
--- Шаг 2. А вот это упадёт с ошибкой: 1 - 5 = -4, что нарушает
--- ограничение "остаток не может быть отрицательным".
--- (Раскомментируйте следующую строку, чтобы увидеть ошибку
--- в реальном выполнении — в таком виде файл отключает этот шаг,
--- чтобы остальная часть файла продолжила выполняться без остановки.)
--- UPDATE part SET stock_quantity = stock_quantity - 5 WHERE id = 50;
+-- Проверяем, что попытка списания нарушает CHECK.
+SELECT set_config('demo.part_id', :'part_id', false);
 
--- Поскольку шаг 2 нарушает бизнес-правило (нельзя уйти в минус
--- по складу), мы НЕ хотим сохранять даже шаг 1 — списание без
--- реального наличия запчасти было бы враньём в базе. Поэтому
--- откатываем всю транзакцию целиком, а не только второй шаг.
+DO $$
+DECLARE
+    v_part_id integer;
+BEGIN
+    v_part_id := current_setting('demo.part_id')::integer;
+
+    BEGIN
+        UPDATE part
+        SET stock_quantity = stock_quantity - 5
+        WHERE id = v_part_id;
+
+        RAISE WARNING
+            'Ожидаемая ошибка не возникла: проверьте ограничение CHECK';
+
+    EXCEPTION
+        WHEN check_violation THEN
+            RAISE NOTICE
+                'Ожидаемая ошибка CHECK перехвачена. '
+                'Транзакция будет отменена.';
+    END;
+END;
+$$;
+
 ROLLBACK;
 
--- Проверка: после ROLLBACK в used_part НЕ появилась запись
--- о списании 5 штук — её не существует, хотя шаг 1 выполнился
--- без ошибки и сам по себе был бы допустим.
+-- ============================================================
+-- ПРОВЕРКА РЕЗУЛЬТАТОВ
+-- ============================================================
+
+-- После ROLLBACK количество записей должно быть 0.
 SELECT count(*) AS "должно быть 0"
 FROM used_part
-WHERE repair_id = 50 AND quantity = 5;
+WHERE repair_id = :repair_id
+  AND part_id = :part_id
+  AND quantity = 5;
 
--- Остаток на складе тоже не изменился — остался 1, как после части 1.
-SELECT id, stock_quantity FROM part WHERE id = 50;
+-- Остаток должен остаться равным 1.
+SELECT id, stock_quantity
+FROM part
+WHERE id = :part_id;
+
+-- Ремонт должен остаться завершённым после первого COMMIT.
+SELECT id, status, result
+FROM repair
+WHERE id = :repair_id;
