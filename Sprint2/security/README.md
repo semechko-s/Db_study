@@ -4,6 +4,7 @@
 \password service_admin
 \password service_app
 \password service_analyst
+\password service_migrator
 * Также можго использовать следующий запрос для проверки результата:
 SELECT
     rolname,
@@ -16,11 +17,13 @@ FROM pg_roles
 WHERE rolname IN (
     'service_admin',
     'service_app',
-    'service_analyst'
+    'service_analyst',
+    'service_migrator'
 )
 ORDER BY rolname;
 * Результат проверки роли service_app есть в result.txt
-* (Следует уточнить, от какого имени будут выполнятся миграции, дабы можно было настроить будущие привилегии и избежать проблем при следующих миграциях)
+* Теперь есть отдельная роль для выполнения миграций, но перед его использованием нужно либо полностью снести бд, которая была создана
+ранее от другого имени либо переписать права на таблицу и индексы на service_migrator
 
 ## Матрица прав (проверено: `security/demo_result.txt`)
 
