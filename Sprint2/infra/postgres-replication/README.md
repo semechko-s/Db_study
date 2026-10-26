@@ -1,14 +1,12 @@
-# PostgreSQL backup/restore и primary → replica для Db_study
+# PostgreSQL backup/restore и primary → replica
 
-Этот стенд адаптирует предоставленный `EXPERIMENT-TEMPLATE.7z` к проекту `Sprint2`.
-Он использует PostgreSQL 17, миграции проекта из `../../migrations`, шаблонную таблицу
+Этот стенд использует PostgreSQL 17, миграции проекта из `../../migrations`, шаблонную таблицу
 `app.replication_probe` для проверяемой записи и три отдельных сервиса:
 
 - `primary` — основной PostgreSQL, принимает записи и отправляет WAL;
 - `replica` — standby-сервер, создаваемый через `pg_basebackup`, читает WAL с primary;
 - `restore` — отдельная чистая база для проверки резервного копирования и восстановления.
 
-Это учебный локальный стенд. Репликация асинхронная; автоматического failover нет.
 Пароли в `.env` предназначены только для локальной разработки.
 
 ## Структура
@@ -24,7 +22,7 @@ Sprint2/
     └── postgres-replication/
         ├── compose.yaml
         ├── .env.example
-        ├── .env                       # создать локально; не коммитить
+        ├── .env
         ├── README.md
         ├── EXPERIMENT-LOG-TEMPLATE.md
         ├── primary/init/
@@ -41,26 +39,18 @@ Sprint2/
         ├── scripts/
         │   ├── backup.sh
         │   └── restore.sh
-        └── backups/                   # создаётся backup-файл; не коммитить
+        └── backups/
 ```
 
-## 0. Требования и первоначальная настройка
+### Требования и первоначальная настройка
 
-Нужны Docker Desktop и Docker Compose v2. Все команды далее выполняются из каталога
-`Sprint2/infra/postgres-replication`.
+Нужны Docker Desktop и Docker Compose v2.
 
 ```bash
 cp .env.example .env
 set -a
 . ./.env
 set +a
-```
-
-Для учебного стенда значения в `.env.example` уже подходят. При желании замени пароли
-на собственные локальные значения, не добавляй `.env` в Git. Проверь конфигурацию:
-
-```bash
-docker compose config
 ```
 
 ### Первый запуск
@@ -71,10 +61,7 @@ docker compose ps
 docker compose logs --tail=100 primary replica
 ```
 
-Первичная инициализация может занять некоторое время. `01-initialize-cluster.sh`
-создаёт роли, `app.replication_probe` и правило доступа replication. Затем
-`02-apply-project-migrations.sh` применяет четыре миграции из `Sprint2/migrations`.
-Реплика ждёт готовности primary и делает начальную копию через `pg_basebackup`.
+Первичная инициализация может занять некоторое время. `01-initialize-cluster.sh` создаёт роли, `app.replication_probe` и правило доступа replication. Затем `02-apply-project-migrations.sh` применяет четыре миграции из `Sprint2/migrations`. Реплика ждёт готовности primary и делает начальную копию через `pg_basebackup`.
 
 Порты на Mac:
 
@@ -84,7 +71,7 @@ docker compose logs --tail=100 primary replica
 
 ## Задание 1. Резервная копия и восстановление в чистый экземпляр PostgreSQL
 
-### 1.1. Убедиться, что схема проекта создана
+### 1.1. Подтверждение, что схема проекта создана
 
 ```bash
 docker compose exec -T primary psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -f /course/sql/06-project-schema-check.sql
@@ -92,15 +79,11 @@ docker compose exec -T primary psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" 
 
 Ожидается 14 базовых таблиц в схеме `public`, а также отдельная таблица `app.replication_probe`.
 
-### 1.2. Создать контрольную запись и резервную копию
-
-Чтобы было что проверить после восстановления, добавь строку в таблицу контрольных записей:
+### 1.2. Создание контрольной записи и резервной копии
 
 ```bash
 docker compose exec -T primary psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -f /course/sql/02-create-probe.sql
 ```
-
-Создай архив резервной копии:
 
 ```bash
 ./scripts/backup.sh
@@ -112,9 +95,7 @@ docker compose exec -T primary psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" 
 ./scripts/backup.sh backups/service-center-manual.dump
 ```
 
-### 1.3. Восстановить в чистый PostgreSQL
-
-Передай путь к созданному файлу. Чтобы автоматически выбрать самый свежий архив, выполни:
+### 1.3. Восстановление в чистый PostgreSQL
 
 ```bash
 BACKUP_FILE=$(ls -t backups/*.dump | head -n 1)
@@ -122,27 +103,19 @@ echo "$BACKUP_FILE"
 ./scripts/restore.sh "$BACKUP_FILE"
 ```
 
-`restore` запускается отдельно, с отдельным volume и базой `service_center_restored`.
-Перед восстановлением скрипт удаляет и заново создаёт только целевую базу внутри
-сервиса `restore`, затем восстанавливает архив одной транзакцией и выводит список таблиц.
-Исходные primary и replica, а также их volumes не удаляются и не очищаются.
-
-### 1.4. Проверить восстановленные данные
+### 1.4. Проверка восстановленных данных
 
 ```bash
 docker compose exec -T restore psql -U "$POSTGRES_ADMIN_USER" -d "$RESTORE_DB" -f /course/sql/06-project-schema-check.sql
 docker compose exec -T restore psql -U "$POSTGRES_ADMIN_USER" -d "$RESTORE_DB" -f /course/sql/04-read-probes.sql
 ```
+На `primary` и `restore` значение `public_base_tables` должно быть равно 14. Это подтверждает, что в обеих базах присутствуют 14 таблиц схемы `public`. Контрольная запись, созданная до backup, должна присутствовать и после восстановления. Это подтверждает и наличие схемы проекта, и перенос данных из архива.
 
-Сравни `public_base_tables` на primary и restore — ожидается 14 на обоих. Контрольная запись,
-созданная до backup, должна присутствовать и после восстановления. Это подтверждает и наличие
-схемы проекта, и перенос данных из архива.
+Повторный запуск `./scripts/restore.sh ...` снова создаёт пустую целевую базу перед восстановлением.
 
-Повторный запуск `./scripts/restore.sh ...` снова создаёт пустую целевую базу перед восстановлением. **Не выполняй `docker compose down -v`**, если хочешь сохранить primary и replica: эта команда удаляет все volumes стенда.
+## Задание 2. Запуск primary/replica и подтверждение поступлений изменений
 
-## Задание 2. Запустить primary/replica и подтвердить поступление изменений
-
-### 2.1. Подтвердить роли
+### 2.1. Подтверждение ролей
 
 Primary должен возвращать `f` (`false`):
 
@@ -156,7 +129,7 @@ Replica должен возвращать `t` (`true`):
 docker compose exec -T replica psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -c 'SELECT pg_is_in_recovery();'
 ```
 
-### 2.2. Проверить поток репликации на primary
+### 2.2. Проверка потока репликации на primary
 
 ```bash
 docker compose exec -T primary psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -f /course/sql/01-primary-status.sql
@@ -164,15 +137,15 @@ docker compose exec -T primary psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" 
 
 В `pg_stat_replication` должна быть строка для `service_center_replica`, у которой `state = streaming`.
 
-### 2.3. Записать данные на primary
+### 2.3. Запись данных на primary
 
 ```bash
 docker compose exec -T primary psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -f /course/sql/02-create-probe.sql
 ```
 
-Команда вернёт `id`, уникальный `marker` и время записи. Сохрани `marker` для отчёта.
+Команда вернёт `id`, уникальный `marker` и время записи.
 
-### 2.4. Подтвердить чтение той же записи на replica
+### 2.4. Подтверждение чтения той же записи на replica
 
 ```bash
 docker compose exec -T replica psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -f /course/sql/04-read-probes.sql
@@ -187,24 +160,13 @@ docker compose exec -T replica psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" 
 docker compose exec -T replica psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -c "SELECT id, marker, created_at FROM app.replication_probe ORDER BY id DESC LIMIT 5;"
 ```
 
-### 2.5. Подтвердить, что replica read-only
+### 2.5. Подтверждение, что replica read-only
 
 ```bash
 docker compose exec -T replica psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -c "INSERT INTO app.replication_probe(marker) VALUES ('should-fail-on-replica');"
 ```
 
 Ожидается ошибка о невозможности `INSERT` в read-only transaction. Это ожидаемое поведение standby, а не сбой стенда.
-
-## Что приложить как доказательства
-
-1. `docker compose ps` — оба сервиса primary/replica запущены.
-2. `SELECT pg_is_in_recovery()` на обоих узлах: `false` на primary и `true` на replica.
-3. Вывод `pg_stat_replication` с `state = streaming`.
-4. Вывод INSERT на primary с уникальным `marker`.
-5. Вывод SELECT на replica с тем же `marker`.
-6. Успешный вывод `backup.sh` и `restore.sh`.
-7. Число таблиц и контрольная запись после восстановления.
-8. Заполненный `EXPERIMENT-LOG-TEMPLATE.md` — фактические результаты и имена скриншотов.
 
 ## Ограничения
 
