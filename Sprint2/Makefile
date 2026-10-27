@@ -9,14 +9,16 @@ endif
 
 
 DB             ?= service_center
-PSQL_USER      ?= $(USER)
+PSQL_USER      ?= service_migrator
 PSQL_HOST      ?= localhost
 PSQL_PORT      ?= 5432
-
-DATABASE_URL   = postgres://$(PSQL_USER)@$(PSQL_HOST):$(PSQL_PORT)/$(DB)?sslmode=disable
+MIGRATOR_PASSWORD ?= $(MIGRATOR_PASSWORD)
+DATABASE_URL   = postgres://$(PSQL_USER):$(MIGRATOR_PASSWORD)@$(PSQL_HOST):$(PSQL_PORT)/$(DB)?sslmode=disable
 
 MIGRATIONS_DIR := migrations
 TEST_DIR       := test
+
+export PGPASSWORD := $(MIGRATOR_PASSWORD)
 
 PSQL := psql -v ON_ERROR_STOP=1 -U $(PSQL_USER) -h $(PSQL_HOST) -p $(PSQL_PORT) -d $(DB)
 
@@ -51,6 +53,12 @@ down: ## Откатить одну последнюю миграцию
 	migrate -path $(MIGRATIONS_DIR) -database "$(DATABASE_URL)" down 1
 
 down-all: ## Откатить все миграции
+	@set -eu; \
+	exists=$$(psql -X -w -U $(PSQL_USER) -h $(PSQL_HOST) -p $(PSQL_PORT) -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$(DB)'"); \
+	if [ "$$exists" != "1" ]; then \
+		echo "База $(DB) не существует. Откатывать нечего."; \
+		exit 0; \
+	fi; \
 	migrate -path $(MIGRATIONS_DIR) -database "$(DATABASE_URL)" down
 
 version: ## Показать текущую версию схемы
@@ -67,9 +75,17 @@ redo: ## Откатить все миграции и применить зано
 # -------------------- База данных ---------------------------
 
 createdb: ## Создать базу данных, если её ещё нет
-	@createdb -U $(PSQL_USER) -h $(PSQL_HOST) -p $(PSQL_PORT) $(DB) 2>/dev/null || \
-		$(PSQL) -tAc "SELECT 1" >/dev/null 2>&1 || \
-		(echo "Ошибка подключения к PostgreSQL или создания базы $(DB)"; exit 1)
+	@set -eu; \
+	exists=$$(psql -X -w -U $(PSQL_USER) -h $(PSQL_HOST) -p $(PSQL_PORT) -d postgres -tAc "SELECT 1 FROM pg_database WHERE datname = '$(DB)'"); \
+	if [ "$$exists" = "1" ]; then \
+		echo "База $(DB) уже существует"; \
+	else \
+		echo "Создание базы $(DB)..."; \
+		createdb -w -U $(PSQL_USER) -h $(PSQL_HOST) -p $(PSQL_PORT) $(DB) || { \
+			echo "Ошибка создания базы $(DB). Проверь права пользователя."; \
+			exit 1; \
+		}; \
+	fi
 
 dropdb: ## Удалить базу данных
 	dropdb -U $(PSQL_USER) -h $(PSQL_HOST) -p $(PSQL_PORT) $(DB)
