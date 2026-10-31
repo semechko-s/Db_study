@@ -1,48 +1,16 @@
 # PostgreSQL backup/restore и primary → replica
 
-Этот стенд использует PostgreSQL 17, миграции проекта из `../../migrations`, шаблонную таблицу
-`app.replication_probe` для проверяемой записи и три отдельных сервиса:
+Этот стенд разворачивает отказоустойчивый кластер PostgreSQL 17 с автоматическим переключением (failover).
 
-- `primary` — основной PostgreSQL, принимает записи и отправляет WAL;
-- `replica` — standby-сервер, создаваемый через `pg_basebackup`, читает WAL с primary;
-- `restore` — отдельная чистая база для проверки резервного копирования и восстановления.
+В состав входят:
+- **etcd1, etcd2, etcd3** — распределенное хранилище конфигурации (DCS) для Patroni.
+- **pg1, pg2** — узлы PostgreSQL под управлением Patroni. Один из них — лидер (Leader), второй — синхронная реплика (Sync Standby).
+- **haproxy** — балансировщик, который проверяет статус Patroni и направляет запросы только на текущего лидера.
+- **restore** — изолированный экземпляр PostgreSQL для проверки резервного копирования и восстановления.
 
 Пароли в `.env` предназначены только для локальной разработки.
 
-## Структура
-
-```text
-Sprint2/
-├── migrations/
-│   ├── 001_create_base_schema.up.sql
-│   ├── 002_add_constraints_and_indexes.up.sql
-│   ├── 003_prevent_double_part_reservation.up.sql
-│   └── 004_optimize_reservation_queries.up.sql
-└── infra/
-    └── postgres-replication/
-        ├── compose.yaml
-        ├── .env.example
-        ├── .env
-        ├── README.md
-        ├── EXPERIMENT-LOG-TEMPLATE.md
-        ├── primary/init/
-        │   ├── 01-initialize-cluster.sh
-        │   └── 02-apply-project-migrations.sh
-        ├── replica/replica-entrypoint.sh
-        ├── sql/
-        │   ├── 01-primary-status.sql
-        │   ├── 02-create-probe.sql
-        │   ├── 03-replica-status.sql
-        │   ├── 04-read-probes.sql
-        │   ├── 05-integrity-check.sql
-        │   └── 06-project-schema-check.sql
-        ├── scripts/
-        │   ├── backup.sh
-        │   └── restore.sh
-        └── backups/
-```
-
-### Требования и первоначальная настройка
+## Требования и первоначальная настройка
 
 Нужны Docker Desktop и Docker Compose v2.
 
@@ -53,47 +21,57 @@ set -a
 set +a
 ```
 
-### Первый запуск
+## Первый запуск
 
 ```bash
-docker compose up -d primary replica
+docker compose up -d
 docker compose ps
-docker compose logs --tail=100 primary replica
+docker compose logs --tail=100 pg1 pg2
 ```
 
-Первичная инициализация может занять некоторое время. `01-initialize-cluster.sh` создаёт роли, `app.replication_probe` и правило доступа replication. Затем `02-apply-project-migrations.sh` применяет четыре миграции из `Sprint2/migrations`. Реплика ждёт готовности primary и делает начальную копию через `pg_basebackup`.
+Первичная инициализация может занять некоторое время. Patroni дождется etcd, выберет лидера, применит миграции из `Sprint2/migrations` и настроит синхронную репликацию.
 
 Порты на Mac:
 
-- primary: `localhost:55432`;
-- replica: `localhost:55433`;
-- restore: `localhost:55434`.
+- **HAProxy**: `localhost:55432` — единая точка входа для записи и чтения (направляет запросы на текущего лидера).
+- **HAProxy Stats**: `localhost:8404` — веб-интерфейс для наблюдения за состоянием бэкендов.
+- **restore**: `localhost:55434` — отдельный экземпляр PostgreSQL для восстановления резервной копии.
 
 ## Задание 1. Резервная копия и восстановление в чистый экземпляр PostgreSQL
 
 ### 1.1. Подтверждение, что схема проекта создана
 
 ```bash
-docker compose exec -T primary psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -f /course/sql/06-project-schema-check.sql
+docker compose exec -T \
+  -e PGPASSWORD="$APPLICATION_PASSWORD" \
+  pg2 psql -h haproxy -p 5432 \
+  -U "$APPLICATION_USER" -d "$POSTGRES_DB" \
+  -f /course/sql/06-project-schema-check.sql
 ```
 
 Ожидается 14 базовых таблиц в схеме `public`, а также отдельная таблица `app.replication_probe`.
 
 ### 1.2. Создание контрольной записи и резервной копии
 
+Создание контрольной записи (через HAProxy):
+
 ```bash
-docker compose exec -T primary psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -f /course/sql/02-create-probe.sql
+docker compose exec -T \
+  -e PGPASSWORD="$APPLICATION_PASSWORD" \
+  pg2 psql -h haproxy -p 5432 \
+  -U "$APPLICATION_USER" -d "$POSTGRES_DB" \
+  -f /course/sql/02-create-probe.sql
 ```
+
+Создание бэкапа:
 
 ```bash
 ./scripts/backup.sh
 ```
 
-Скрипт создаёт файл формата `pg_dump -Fc` в `backups/`, проверяет, что архив не пустой, и проверяет возможность прочитать его список объектов. Для собственного пути можно передать аргумент:
+Скрипт `backup.sh` запускает `pg_dump` внутри контейнера `pg2`, но подключается к базе через HAProxy (`haproxy:5432`). Таким образом, резервная копия создается с текущего лидера, независимо от того, какой узел сейчас выполняет эту роль.
 
-```bash
-./scripts/backup.sh backups/service-center-manual.dump
-```
+После создания скрипт проверяет корректность архива с помощью `pg_restore --list`.
 
 ### 1.3. Восстановление в чистый PostgreSQL
 
@@ -103,74 +81,151 @@ echo "$BACKUP_FILE"
 ./scripts/restore.sh "$BACKUP_FILE"
 ```
 
+Скрипт запускает отдельный экземпляр PostgreSQL `restore`, пересоздает целевую базу `service_center_restored` и восстанавливает в нее данные из резервной копии.
+
+Рабочая база и узлы Patroni при этом не затрагиваются.
+
 ### 1.4. Проверка восстановленных данных
 
 ```bash
-docker compose exec -T restore psql -U "$POSTGRES_ADMIN_USER" -d "$RESTORE_DB" -f /course/sql/06-project-schema-check.sql
-docker compose exec -T restore psql -U "$POSTGRES_ADMIN_USER" -d "$RESTORE_DB" -f /course/sql/04-read-probes.sql
+docker compose exec -T restore psql \
+  -U "$POSTGRES_ADMIN_USER" -d "$RESTORE_DB" \
+  -f /course/sql/06-project-schema-check.sql
+
+docker compose exec -T restore psql \
+  -U "$POSTGRES_ADMIN_USER" -d "$RESTORE_DB" \
+  -f /course/sql/04-read-probes.sql
 ```
-На `primary` и `restore` значение `public_base_tables` должно быть равно 14. Это подтверждает, что в обеих базах присутствуют 14 таблиц схемы `public`. Контрольная запись, созданная до backup, должна присутствовать и после восстановления. Это подтверждает и наличие схемы проекта, и перенос данных из архива.
 
-Повторный запуск `./scripts/restore.sh ...` снова создаёт пустую целевую базу перед восстановлением.
+На рабочей базе и `restore` значение `public_base_tables` должно быть равно 14. Контрольная запись должна присутствовать в восстановленной базе.
 
-## Задание 2. Запуск primary/replica и подтверждение поступлений изменений
+## Задание 2. Отказоустойчивость: запись, репликация и автоматический failover
 
-### 2.1. Подтверждение ролей
-
-Primary должен возвращать `f` (`false`):
+### 2.1. Подтверждение ролей и статуса кластера
 
 ```bash
-docker compose exec -T primary psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -c 'SELECT pg_is_in_recovery();'
+docker compose exec pg1 patronictl -c /tmp/patroni.yml list
 ```
 
-Replica должен возвращать `t` (`true`):
+Ожидается один **Leader** и один **Sync Standby**. Например, `pg2` может быть лидером, а `pg1` — синхронной репликой.
+
+Также можно открыть статистику HAProxy в браузере: [http://localhost:8404/](http://localhost:8404/).
+
+В бэкенде `postgres_primary` сервер-лидер будет в статусе `UP`, а реплика — `DOWN`. Это ожидаемое поведение: HAProxy проверяет endpoint Patroni `/primary`, который возвращает HTTP 200 только на текущем лидере. Реплика продолжает работать и получать WAL, но не принимает запросы через этот backend.
+
+### 2.2. Проверка записи через единую точку входа (HAProxy)
+
+Запись всегда идет через порт `55432`. HAProxy автоматически направит запрос на текущего лидера.
 
 ```bash
-docker compose exec -T replica psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -c 'SELECT pg_is_in_recovery();'
+PGPASSWORD="$APPLICATION_PASSWORD" psql \
+  -h 127.0.0.1 -p 55432 \
+  -U "$APPLICATION_USER" -d "$POSTGRES_DB" \
+  -c "INSERT INTO app.replication_probe(marker)
+      VALUES ('before-failover-'||clock_timestamp())
+      RETURNING id, marker;"
 ```
 
-### 2.2. Проверка потока репликации на primary
+Команда должна вернуть `id` и `marker` (`INSERT 0 1`).
+
+### 2.3. Подтверждение репликации
 
 ```bash
-docker compose exec -T primary psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -f /course/sql/01-primary-status.sql
+docker compose exec -T \
+  -e PGPASSWORD="$POSTGRES_ADMIN_PASSWORD" \
+  pg1 psql -h 127.0.0.1 \
+  -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" \
+  -c "SELECT id, marker FROM app.replication_probe ORDER BY id DESC LIMIT 1;"
 ```
 
-В `pg_stat_replication` должна быть строка для `service_center_replica`, у которой `state = streaming`.
+Запись должна присутствовать на `pg1`, если в данный момент он является синхронной репликой. Так как репликация синхронная, подтвержденная транзакция должна быть передана на реплику до завершения записи.
 
-### 2.3. Запись данных на primary
+### 2.4. Имитация падения лидера (Failover)
+
+Перед остановкой узла необходимо проверить, кто сейчас является лидером:
 
 ```bash
-docker compose exec -T primary psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -f /course/sql/02-create-probe.sql
+docker compose exec pg1 patronictl -c /tmp/patroni.yml list
 ```
 
-Команда вернёт `id`, уникальный `marker` и время записи.
-
-### 2.4. Подтверждение чтения той же записи на replica
+Если лидером является `pg2`, выполняем:
 
 ```bash
-docker compose exec -T replica psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -f /course/sql/04-read-probes.sql
-docker compose exec -T replica psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -f /course/sql/03-replica-status.sql
+docker compose stop pg2
 ```
 
-В таблице на replica должен присутствовать тот же `marker`. В `pg_stat_wal_receiver` ожидается `status = streaming`; LSN получения и применения WAL должны быть заполнены.
-
-Можно проверить конкретный marker вручную:
+Если лидером является `pg1`, для проверки failover необходимо остановить именно `pg1`:
 
 ```bash
-docker compose exec -T replica psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -c "SELECT id, marker, created_at FROM app.replication_probe ORDER BY id DESC LIMIT 5;"
+docker compose stop pg1
 ```
 
-### 2.5. Подтверждение, что replica read-only
+**Что должно произойти:**
+
+1. Patroni на оставшемся узле обнаружит потерю связи с лидером через etcd и при соблюдении условий кворума и синхронной репликации повысит его до нового лидера.
+2. HAProxy при очередной проверке увидит, что новый лидер теперь отдает `200 OK` на `/primary`, и переключит трафик на него.
+
+Подождать примерно 30–50 секунд. Проверить статус:
 
 ```bash
-docker compose exec -T replica psql -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" -c "INSERT INTO app.replication_probe(marker) VALUES ('should-fail-on-replica');"
+docker compose exec pg1 patronictl -c /tmp/patroni.yml list
 ```
 
-Ожидается ошибка о невозможности `INSERT` в read-only transaction. Это ожидаемое поведение standby, а не сбой стенда.
+Если остановлен `pg2`, `pg1` должен стать **Leader**. Если остановлен `pg1`, новым лидером должен стать `pg2`.
+
+### 2.5. Главная проверка: продолжение записи после failover
+
+```bash
+PGPASSWORD="$APPLICATION_PASSWORD" psql \
+  -h 127.0.0.1 -p 55432 \
+  -U "$APPLICATION_USER" -d "$POSTGRES_DB" \
+  -c "INSERT INTO app.replication_probe(marker)
+      VALUES ('after-failover-'||clock_timestamp())
+      RETURNING id, marker;"
+```
+
+При успешном переключении HAProxy запрос должен попасть на нового лидера.
+
+**Примечание:** в кластере включен строгий режим синхронной репликации (`synchronous_mode_strict: true`). После failover у нового лидера может временно не быть синхронной реплики. В таком случае запись может ожидать появления синхронного standby. Это ожидаемое поведение: кластер сохраняет требование синхронного подтверждения записи.
+
+Для восстановления полноценного режима работы необходимо вернуть остановленный узел в кластер и дождаться его перехода в `Sync Standby`.
+
+Проверка, что данные находятся на новом лидере:
+
+```bash
+docker compose exec -T \
+  -e PGPASSWORD="$POSTGRES_ADMIN_PASSWORD" \
+  pg1 psql -h 127.0.0.1 \
+  -U "$POSTGRES_ADMIN_USER" -d "$POSTGRES_DB" \
+  -c "SELECT id, marker FROM app.replication_probe ORDER BY id;"
+```
+
+Если новым лидером стал `pg1`, в таблице должны быть обе записи: `before-failover-*` и `after-failover-*`.
+
+Если новым лидером стал `pg2`, для проверки необходимо выполнить аналогичную команду через `pg2`.
+
+### 2.6. Возврат остановленного узла в кластер
+
+После завершения проверки необходимо запустить остановленный узел.
+
+Например, если ранее был остановлен `pg2`:
+
+```bash
+docker compose up -d pg2
+```
+
+Проверить состояние кластера:
+
+```bash
+docker compose exec pg1 patronictl -c /tmp/patroni.yml list
+```
+
+Дождаться, пока запущенный узел присоединится к кластеру и получит роль **Sync Standby**.
+
+Если узел не может автоматически присоединиться к кластеру из-за расхождения таймлайнов WAL, может потребоваться его повторная синхронизация с текущим лидером.
 
 ## Ограничения
 
-- Миграции из `primary/init` запускаются только при первом создании пустого `primary_data` volume. Если volume уже был инициализирован, изменение init-скриптов не запустит миграции повторно.
-- `replica` создаёт базовую копию при первом старте. Не удаляй volume primary для «починки» реплики. Для полного сброса учебного стенда используй `docker compose down -v` только когда точно готов потерять все данные в трёх volumes.
-- Репликация асинхронная: обычно изменения видны почти сразу, но при нагрузке возможна небольшая задержка.
-- Этот стенд не выполняет автоматическое повышение replica до primary при отказе primary.
+- **Восстановление старого узла**: После падения лидера при его повторном запуске Patroni может не суметь автоматически присоединить его к кластеру из-за расхождения таймлайнов WAL. Если в `patroni.yml` не настроен `pg_rewind`, узел может потребовать повторной синхронизации с актуальным лидером. Удаление volume и повторное создание узла допустимы только в крайнем случае, после проверки актуальности данных на оставшемся узле. Такая операция приводит к удалению данных соответствующего узла.
+
+- **Синхронная репликация**: В режиме `Sync Standby` запись подтверждается после синхронного подтверждения реплики. При потере синхронного standby в строгом режиме (`synchronous_mode_strict: true`) запись может временно блокироваться до появления новой синхронной реплики. Это ожидаемое поведение, обеспечивающее выбранный уровень защиты от потери подтвержденных данных.

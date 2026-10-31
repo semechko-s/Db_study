@@ -2,7 +2,7 @@
 set -eu
 
 : "${POSTGRES_DB:?POSTGRES_DB is required}"
-: "${POSTGRES_USER:?POSTGRES_USER is required}"
+: "${POSTGRES_ADMIN_USER:?POSTGRES_USER is required}"
 : "${REPLICATION_USER:?REPLICATION_USER is required}"
 : "${REPLICATION_PASSWORD:?REPLICATION_PASSWORD is required}"
 : "${APPLICATION_USER:?APPLICATION_USER is required}"
@@ -11,11 +11,11 @@ set -eu
 : "${ANALYST_PASSWORD:?ANALYST_PASSWORD is required}"
 
 psql \
-  --username "$POSTGRES_USER" \
+  --username "$POSTGRES_ADMIN_USER" \
   --dbname "$POSTGRES_DB" \
   --set=ON_ERROR_STOP=1 \
   --set=database_name="$POSTGRES_DB" \
-  --set=admin_user="$POSTGRES_USER" \
+  --set=admin_user="$POSTGRES_ADMIN_USER" \
   --set=replication_user="$REPLICATION_USER" \
   --set=replication_password="$REPLICATION_PASSWORD" \
   --set=application_user="$APPLICATION_USER" \
@@ -90,5 +90,3 @@ GRANT USAGE, SELECT ON SEQUENCES TO :"application_user";
 ALTER DEFAULT PRIVILEGES FOR ROLE :"admin_user" IN SCHEMA app
 GRANT SELECT ON TABLES TO :"analyst_user";
 SQL
-
-printf '\nhost replication "%s" samenet scram-sha-256\n' "$REPLICATION_USER" >> "$PGDATA/pg_hba.conf"
