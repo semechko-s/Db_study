@@ -1,6 +1,5 @@
 -- Демонстрация разрешённых и запрещённых операций по ролям.
--- Запуск от суперпользователя (нужен SET ROLE; пароли ролей не нужны):
---   psql -U postgres -d service_center -f security/02_role_permissions_demo.sql
+-- Роли: service_admin, service_app, service_analyst, service_migrator.
 
 \set ON_ERROR_STOP on
 \pset pager off
@@ -44,6 +43,19 @@ END
 $$;
 
 \o /dev/null
+
+-- ---------- service_migrator ----------
+SELECT pg_temp.check_op('service_migrator', 'CREATE TABLE в public (новая таблица)',
+    'CREATE TABLE public.sec_demo_future (id bigserial PRIMARY KEY, note text)', 'РАЗРЕШЕНО');
+SELECT pg_temp.check_op('service_migrator', 'ALTER собственной таблицы',
+    'ALTER TABLE public.sec_demo_future ADD COLUMN extra int', 'РАЗРЕШЕНО');
+SELECT pg_temp.check_op('service_migrator', 'CREATE ROLE',
+    'CREATE ROLE sec_demo_role', 'ЗАПРЕЩЕНО');
+SELECT pg_temp.check_op('service_migrator', 'GRANT роли другой роли',
+    'GRANT service_admin TO service_analyst', 'ЗАПРЕЩЕНО');
+SELECT pg_temp.check_op('service_migrator', 'Чтение pg_authid (хеши паролей)',
+    'SELECT rolpassword FROM pg_catalog.pg_authid LIMIT 1', 'ЗАПРЕЩЕНО');
+
 -- ---------- service_app ----------
 SELECT pg_temp.check_op('service_app', 'SELECT из client',
     'SELECT count(*) FROM public.client', 'РАЗРЕШЕНО');
@@ -53,6 +65,10 @@ SELECT pg_temp.check_op('service_app', 'UPDATE client',
     $q$UPDATE public.client SET phone = phone WHERE full_name = '__sec_demo__'$q$, 'РАЗРЕШЕНО');
 SELECT pg_temp.check_op('service_app', 'DELETE из client',
     $q$DELETE FROM public.client WHERE full_name = '__sec_demo__'$q$, 'РАЗРЕШЕНО');
+SELECT pg_temp.check_op('service_app', 'SELECT из новой таблицы migrator (default privileges)',
+    'SELECT count(*) FROM public.sec_demo_future', 'РАЗРЕШЕНО');
+SELECT pg_temp.check_op('service_app', 'INSERT в новую таблицу migrator (таблица + последовательность)',
+    $q$INSERT INTO public.sec_demo_future (note) VALUES ('x')$q$, 'РАЗРЕШЕНО');
 SELECT pg_temp.check_op('service_app', 'CREATE TABLE в public',
     'CREATE TABLE public.sec_demo_forbidden (id bigint)', 'ЗАПРЕЩЕНО');
 SELECT pg_temp.check_op('service_app', 'ALTER TABLE client',
@@ -73,6 +89,10 @@ SELECT pg_temp.check_op('service_analyst', 'SELECT из client',
     'SELECT count(*) FROM public.client', 'РАЗРЕШЕНО');
 SELECT pg_temp.check_op('service_analyst', 'SELECT из request',
     'SELECT count(*) FROM public.request', 'РАЗРЕШЕНО');
+SELECT pg_temp.check_op('service_analyst', 'SELECT из новой таблицы migrator (default privileges)',
+    'SELECT count(*) FROM public.sec_demo_future', 'РАЗРЕШЕНО');
+SELECT pg_temp.check_op('service_analyst', 'INSERT в новую таблицу migrator',
+    $q$INSERT INTO public.sec_demo_future (note) VALUES ('x')$q$, 'ЗАПРЕЩЕНО');
 SELECT pg_temp.check_op('service_analyst', 'INSERT в client',
     $q$INSERT INTO public.client (full_name, phone) VALUES ('__sec_demo__', '+70000000000')$q$, 'ЗАПРЕЩЕНО');
 SELECT pg_temp.check_op('service_analyst', 'UPDATE client',
@@ -97,6 +117,12 @@ SELECT pg_temp.check_op('service_admin', 'UPDATE client',
     $q$UPDATE public.client SET phone = phone WHERE full_name = '__sec_demo__'$q$, 'РАЗРЕШЕНО');
 SELECT pg_temp.check_op('service_admin', 'DELETE из client',
     $q$DELETE FROM public.client WHERE full_name = '__sec_demo__'$q$, 'РАЗРЕШЕНО');
+SELECT pg_temp.check_op('service_admin', 'INSERT в новую таблицу migrator (default privileges)',
+    $q$INSERT INTO public.sec_demo_future (note) VALUES ('x')$q$, 'РАЗРЕШЕНО');
+SELECT pg_temp.check_op('service_admin', 'TRUNCATE новой таблицы migrator',
+    'TRUNCATE public.sec_demo_future', 'РАЗРЕШЕНО');
+SELECT pg_temp.check_op('service_admin', 'ALTER таблицы migrator (не владелец)',
+    'ALTER TABLE public.sec_demo_future ADD COLUMN sec_demo_col int', 'ЗАПРЕЩЕНО');
 SELECT pg_temp.check_op('service_admin', 'CREATE TABLE в public',
     'CREATE TABLE public.sec_demo_admin_tmp (id bigint)', 'РАЗРЕШЕНО');
 SELECT pg_temp.check_op('service_admin', 'TRUNCATE своей таблицы',
@@ -107,7 +133,13 @@ SELECT pg_temp.check_op('service_admin', 'CREATE ROLE',
     'CREATE ROLE sec_demo_role', 'ЗАПРЕЩЕНО');
 SELECT pg_temp.check_op('service_admin', 'Чтение pg_authid (хеши паролей)',
     'SELECT rolpassword FROM pg_catalog.pg_authid LIMIT 1', 'ЗАПРЕЩЕНО');
+
+-- ---------- service_migrator: уборка ----------
+SELECT pg_temp.check_op('service_migrator', 'DROP собственной таблицы',
+    'DROP TABLE public.sec_demo_future', 'РАЗРЕШЕНО');
+
 \o
+
 -- ---------- Итог ----------
 \echo
 \echo '=== Результаты проверки прав ==='
@@ -119,7 +151,12 @@ SELECT
     CASE WHEN expected = actual THEN 'OK' ELSE '<<< НЕСООТВЕТСТВИЕ' END AS "Вердикт",
     details   AS "Сообщение сервера"
 FROM sec_demo_results
-ORDER BY n;
+ORDER BY
+    array_position(
+        ARRAY['service_app', 'service_analyst', 'service_admin', 'service_migrator'],
+        role_name
+    ),
+    n;
 
 \echo
 \echo '=== Сводка ==='
@@ -133,7 +170,7 @@ FROM sec_demo_results;
 \echo '=== Атрибуты ролей ==='
 SELECT rolname, rolcanlogin, rolsuper, rolcreatedb, rolcreaterole, rolreplication
 FROM pg_roles
-WHERE rolname IN ('service_admin', 'service_app', 'service_analyst')
+WHERE rolname IN ('service_admin', 'service_app', 'service_analyst', 'service_migrator')
 ORDER BY rolname;
 
 ROLLBACK;
