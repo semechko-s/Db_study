@@ -17,37 +17,23 @@ CONNECTION_URL="$1"
 : "${ANALYST_USER:?ANALYST_USER is required}"
 : "${ANALYST_PASSWORD:?ANALYST_PASSWORD is required}"
 
-echo "Creating PostgreSQL roles..."
-
-psql \
-    --dbname="$CONNECTION_URL" \
-    --set=ON_ERROR_STOP=1 \
-    --set=replication_user="$REPLICATION_USER" \
-    --set=replication_password="$REPLICATION_PASSWORD" \
-    --set=application_user="$APPLICATION_USER" \
-    --set=application_password="$APPLICATION_PASSWORD" \
-    --set=analyst_user="$ANALYST_USER" \
-    --set=analyst_password="$ANALYST_PASSWORD" <<'SQL'
-
-SELECT format('CREATE ROLE %I WITH LOGIN REPLICATION PASSWORD %L',
-              :'replication_user', :'replication_password')
-\gexec
-
-SELECT format('CREATE ROLE %I WITH LOGIN PASSWORD %L',
-              :'application_user', :'application_password')
-\gexec
-
-SELECT format('CREATE ROLE %I WITH LOGIN PASSWORD %L',
-              :'analyst_user', :'analyst_password')
-\gexec
-
-SQL
-
 echo "Creating database: ${POSTGRES_DB}"
 
 createdb \
     --maintenance-db="$CONNECTION_URL" \
     --owner="$POSTGRES_ADMIN_USER" \
     "$POSTGRES_DB"
+
+export PGHOST=127.0.0.1
+export PGPORT=5432
+export PGPASSWORD="$POSTGRES_ADMIN_PASSWORD"
+
+echo "Initializing PostgreSQL roles and schemas..."
+
+/course/init/01-initialize-cluster.sh
+
+echo "Applying project migrations..."
+
+/course/init/02-apply-project-migrations.sh
 
 echo "Post-bootstrap initialization completed."

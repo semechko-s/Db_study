@@ -14,5 +14,6 @@ envsubst \
 
 chown postgres:postgres /tmp/patroni.yml
 chown -R postgres:postgres "$PGDATA"
+chmod 700 "$PGDATA"
 
 exec gosu postgres patroni /tmp/patroni.yml
