@@ -12,7 +12,8 @@ DB             ?= service_center
 PSQL_USER      ?= service_migrator
 PSQL_HOST      ?= localhost
 PSQL_PORT      ?= 5432
-DATABASE_URL   = postgres://$(PSQL_USER)@$(PSQL_HOST):$(PSQL_PORT)/$(DB)?sslmode=disable
+MIGR_PASSWORD ?= $(MIGRATOR_PASSWORD)
+DATABASE_URL   = postgres://$(PSQL_USER):$(MIGR_PASSWORD)@$(PSQL_HOST):$(PSQL_PORT)/$(DB)?sslmode=disable
 
 MIGRATIONS_DIR := migrations
 TEST_DIR       := test
