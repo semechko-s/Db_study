@@ -584,8 +584,9 @@ def main() -> int:
         "port": int(os.getenv("PGPORT", "5432")),
         "dbname": os.getenv("PGDATABASE", "service_center"),
         "user": os.getenv("PGUSER", "postgres"),
-        "password": os.getenv("PGPASSWORD", "local_dev_password"),
     }
+    if os.getenv("PGPASSWORD"):
+        connection_settings["password"] = os.environ["PGPASSWORD"]
 
     try:
         with psycopg.connect(**connection_settings) as connection:

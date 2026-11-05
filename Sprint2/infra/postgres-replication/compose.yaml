@@ -1,0 +1,229 @@
+
+name: service-center-replication
+
+services:
+  # -------------------- ETCD --------------------
+
+  etcd1:
+    image: quay.io/coreos/etcd:v3.5.18
+    container_name: service-center-etcd1
+    restart: unless-stopped
+    environment:
+      ETCD_NAME: etcd1
+      ETCD_DATA_DIR: /etcd-data
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd1:2380
+      ETCD_ADVERTISE_CLIENT_URLS: http://etcd1:2379
+      ETCD_INITIAL_CLUSTER: etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380
+      ETCD_INITIAL_CLUSTER_STATE: new
+      ETCD_INITIAL_CLUSTER_TOKEN: ${ETCD_TOKEN:?Set ETCD_TOKEN in .env}
+    volumes:
+      - etcd1_data:/etcd-data
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health", "--endpoints=http://127.0.0.1:2379"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - database_network
+
+  etcd2:
+    image: quay.io/coreos/etcd:v3.5.18
+    container_name: service-center-etcd2
+    restart: unless-stopped
+    environment:
+      ETCD_NAME: etcd2
+      ETCD_DATA_DIR: /etcd-data
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd2:2380
+      ETCD_ADVERTISE_CLIENT_URLS: http://etcd2:2379
+      ETCD_INITIAL_CLUSTER: etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380
+      ETCD_INITIAL_CLUSTER_STATE: new
+      ETCD_INITIAL_CLUSTER_TOKEN: ${ETCD_TOKEN:?Set ETCD_TOKEN in .env}
+    volumes:
+      - etcd2_data:/etcd-data
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health", "--endpoints=http://127.0.0.1:2379"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - database_network
+
+  etcd3:
+    image: quay.io/coreos/etcd:v3.5.18
+    container_name: service-center-etcd3
+    restart: unless-stopped
+    environment:
+      ETCD_NAME: etcd3
+      ETCD_DATA_DIR: /etcd-data
+      ETCD_LISTEN_PEER_URLS: http://0.0.0.0:2380
+      ETCD_LISTEN_CLIENT_URLS: http://0.0.0.0:2379
+      ETCD_INITIAL_ADVERTISE_PEER_URLS: http://etcd3:2380
+      ETCD_ADVERTISE_CLIENT_URLS: http://etcd3:2379
+      ETCD_INITIAL_CLUSTER: etcd1=http://etcd1:2380,etcd2=http://etcd2:2380,etcd3=http://etcd3:2380
+      ETCD_INITIAL_CLUSTER_STATE: new
+      ETCD_INITIAL_CLUSTER_TOKEN: ${ETCD_TOKEN:?Set ETCD_TOKEN in .env}
+    volumes:
+      - etcd3_data:/etcd-data
+    healthcheck:
+      test: ["CMD", "etcdctl", "endpoint", "health", "--endpoints=http://127.0.0.1:2379"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    networks:
+      - database_network
+
+  # -------------------- PATRONI / POSTGRESQL --------------------
+
+  pg1:
+    image: service-center-patroni:17
+    build:
+      context: ./patroni
+    container_name: service-center-pg1
+    restart: unless-stopped
+    environment:
+      PATRONI_NAME: pg1
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
+      POSTGRES_ADMIN_USER: ${POSTGRES_ADMIN_USER:?Set POSTGRES_ADMIN_USER in .env}
+      POSTGRES_ADMIN_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Set POSTGRES_ADMIN_PASSWORD in .env}
+      REPLICATION_USER: ${REPLICATION_USER:?Set REPLICATION_USER in .env}
+      REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:?Set REPLICATION_PASSWORD in .env}
+      APPLICATION_USER: ${APPLICATION_USER:?Set APPLICATION_USER in .env}
+      APPLICATION_PASSWORD: ${APPLICATION_PASSWORD:?Set APPLICATION_PASSWORD in .env}
+      ANALYST_USER: ${ANALYST_USER:?Set ANALYST_USER in .env}
+      ANALYST_PASSWORD: ${ANALYST_PASSWORD:?Set ANALYST_PASSWORD in .env}
+    volumes:
+      - patroni_pg1_data:/var/lib/postgresql/data
+      - ./primary/init:/course/init:ro
+      - ./sql:/course/sql:ro
+      - ../../migrations:/course/migrations:ro
+    depends_on:
+      etcd1:
+        condition: service_healthy
+      etcd2:
+        condition: service_healthy
+      etcd3:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -h 127.0.0.1 -p 5432 -U "$${POSTGRES_ADMIN_USER}" -d postgres
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+    networks:
+      - database_network
+
+  pg2:
+    image: service-center-patroni:17
+    build:
+      context: ./patroni
+    container_name: service-center-pg2
+    restart: unless-stopped
+    environment:
+      PATRONI_NAME: pg2
+      POSTGRES_DB: ${POSTGRES_DB:?Set POSTGRES_DB in .env}
+      POSTGRES_ADMIN_USER: ${POSTGRES_ADMIN_USER:?Set POSTGRES_ADMIN_USER in .env}
+      POSTGRES_ADMIN_PASSWORD: ${POSTGRES_ADMIN_PASSWORD:?Set POSTGRES_ADMIN_PASSWORD in .env}
+      REPLICATION_USER: ${REPLICATION_USER:?Set REPLICATION_USER in .env}
+      REPLICATION_PASSWORD: ${REPLICATION_PASSWORD:?Set REPLICATION_PASSWORD in .env}
+      APPLICATION_USER: ${APPLICATION_USER:?Set APPLICATION_USER in .env}
+      APPLICATION_PASSWORD: ${APPLICATION_PASSWORD:?Set APPLICATION_PASSWORD in .env}
+      ANALYST_USER: ${ANALYST_USER:?Set ANALYST_USER in .env}
+      ANALYST_PASSWORD: ${ANALYST_PASSWORD:?Set ANALYST_PASSWORD in .env}
+    volumes:
+      - patroni_pg2_data:/var/lib/postgresql/data
+      - ./primary/init:/course/init:ro
+      - ./sql:/course/sql:ro
+      - ../../migrations:/course/migrations:ro
+    depends_on:
+      etcd1:
+        condition: service_healthy
+      etcd2:
+        condition: service_healthy
+      etcd3:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -h 127.0.0.1 -p 5432 -U "$${POSTGRES_ADMIN_USER}" -d postgres
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 20s
+    networks:
+      - database_network
+
+  # -------------------- HAPROXY --------------------
+
+  haproxy:
+    image: haproxy:3.2-alpine
+    container_name: service-center-haproxy
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${HAPROXY_PORT:-55432}:5432"
+      - "127.0.0.1:${HAPROXY_STATS_PORT:-8404}:8404"
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      pg1:
+        condition: service_healthy
+      pg2:
+        condition: service_healthy
+    networks:
+      - database_network
+
+  # -------------------- RESTORE --------------------
+
+  restore:
+    image: postgres:17-bookworm
+    container_name: service-center-restore
+    profiles:
+      - restore
+    environment:
+      POSTGRES_DB: ${RESTORE_DB:-service_center_restored}
+      POSTGRES_USER: ${POSTGRES_ADMIN_USER:?Set POSTGRES_ADMIN_USER in .env}
+      POSTGRES_PASSWORD: ${RESTORE_ADMIN_PASSWORD:?Set RESTORE_ADMIN_PASSWORD in .env}
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256 --auth-local=trust
+    ports:
+      - "127.0.0.1:${RESTORE_PORT:-55434}:5432"
+    volumes:
+      - restore_data:/var/lib/postgresql/data
+      - ./sql:/course/sql:ro
+    healthcheck:
+      test:
+        - CMD-SHELL
+        - pg_isready -U "$$POSTGRES_USER" -d "$$POSTGRES_DB"
+      interval: 5s
+      timeout: 3s
+      retries: 20
+      start_period: 10s
+    networks:
+      - database_network
+
+volumes:
+  patroni_pg1_data:
+    name: service_center_patroni_pg1_data
+
+  patroni_pg2_data:
+    name: service_center_patroni_pg2_data
+
+  etcd1_data:
+    name: service_center_etcd1_data
+
+  etcd2_data:
+    name: service_center_etcd2_data
+
+  etcd3_data:
+    name: service_center_etcd3_data
+
+  restore_data:
+    name: service_center_restore_data
+
+networks:
+  database_network:
+    name: service_center_database_network

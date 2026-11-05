@@ -1,0 +1,70 @@
+Pager usage is off.
+BEGIN
+CREATE TABLE
+CREATE FUNCTION
+
+=== Результаты проверки прав ===
+       Роль       |                            Операция                            | Ожидалось | Получено  | Вердикт |                Сообщение сервера                
+------------------+----------------------------------------------------------------+-----------+-----------+---------+-------------------------------------------------
+ service_app      | SELECT из client                                               | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_app      | INSERT в client                                                | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_app      | UPDATE client                                                  | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_app      | DELETE из client                                               | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_app      | SELECT из новой таблицы migrator (default privileges)          | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_app      | INSERT в новую таблицу migrator (таблица + последовательность) | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_app      | CREATE TABLE в public                                          | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied for schema public
+ service_app      | ALTER TABLE client                                             | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | must be owner of table client
+ service_app      | DROP TABLE client                                              | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | must be owner of table client
+ service_app      | TRUNCATE client                                                | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied for table client
+ service_app      | GRANT роли другой роли                                         | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied to grant role "service_admin"
+ service_app      | CREATE ROLE                                                    | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied to create role
+ service_app      | Чтение pg_authid (хеши паролей)                                | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied for table pg_authid
+ service_analyst  | SELECT из client                                               | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_analyst  | SELECT из request                                              | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_analyst  | SELECT из новой таблицы migrator (default privileges)          | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_analyst  | INSERT в новую таблицу migrator                                | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied for table sec_demo_future
+ service_analyst  | INSERT в client                                                | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied for table client
+ service_analyst  | UPDATE client                                                  | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied for table client
+ service_analyst  | DELETE из client                                               | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied for table client
+ service_analyst  | TRUNCATE client                                                | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied for table client
+ service_analyst  | CREATE TABLE в public                                          | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied for schema public
+ service_analyst  | DROP TABLE client                                              | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | must be owner of table client
+ service_analyst  | CREATE ROLE                                                    | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied to create role
+ service_admin    | SELECT из client                                               | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_admin    | INSERT в client                                                | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_admin    | UPDATE client                                                  | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_admin    | DELETE из client                                               | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_admin    | INSERT в новую таблицу migrator (default privileges)           | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_admin    | TRUNCATE новой таблицы migrator                                | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_admin    | ALTER таблицы migrator (не владелец)                           | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | must be owner of table sec_demo_future
+ service_admin    | CREATE TABLE в public                                          | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_admin    | TRUNCATE своей таблицы                                         | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_admin    | DROP своей таблицы                                             | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_admin    | CREATE ROLE                                                    | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied to create role
+ service_admin    | Чтение pg_authid (хеши паролей)                                | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied for table pg_authid
+ service_migrator | CREATE TABLE в public (новая таблица)                          | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_migrator | ALTER собственной таблицы                                      | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+ service_migrator | CREATE ROLE                                                    | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied to create role
+ service_migrator | GRANT роли другой роли                                         | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied to grant role "service_admin"
+ service_migrator | Чтение pg_authid (хеши паролей)                                | ЗАПРЕЩЕНО | ЗАПРЕЩЕНО | OK      | permission denied for table pg_authid
+ service_migrator | DROP собственной таблицы                                       | РАЗРЕШЕНО | РАЗРЕШЕНО | OK      | 
+(42 rows)
+
+
+=== Сводка ===
+ Всего проверок | Совпало | Несоответствий 
+----------------+---------+----------------
+             42 |      42 |              0
+(1 row)
+
+
+=== Атрибуты ролей ===
+     rolname      | rolcanlogin | rolsuper | rolcreatedb | rolcreaterole | rolreplication 
+------------------+-------------+----------+-------------+---------------+----------------
+ service_admin    | t           | f        | f           | f             | f
+ service_analyst  | t           | f        | f           | f             | f
+ service_app      | t           | f        | f           | f             | f
+ service_migrator | t           | f        | t           | f             | f
+(4 rows)
+
+ROLLBACK

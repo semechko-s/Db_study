@@ -1,0 +1,31 @@
+psql -U service_app -d service_center -h localhost
+Password for user service_app: 
+psql (18.6 (Ubuntu 18.6-0ubuntu0.26.04.1))
+SSL connection (protocol: TLSv1.3, cipher: TLS_AES_256_GCM_SHA384, compression: off, ALPN: postgresql)
+Type "help" for help.
+
+service_center=> SELECT cur
+
+service_center=> SELECT current_user;
+ current_user 
+--------------
+ service_app
+(1 row)
+
+service_center=> SELECT COUNT(*) FROM public.client;
+ count 
+-------
+     0
+(1 row)
+
+service_center=> CREATE TABLE public.forbidden_test (
+    id BIGINT PRIMARY KEY
+);
+ERROR:  permission denied for schema public
+LINE 1: CREATE TABLE public.forbidden_test (
+                     ^
+service_center=> CREATE ROLE unauthorized_user;
+ERROR:  permission denied to create role
+DETAIL:  Only roles with the CREATEROLE attribute may create roles.
+service_center=> DROP TABLE public.client;
+ERROR:  must be owner of table client
