@@ -7,13 +7,16 @@ set -e
 : "${REPLICATION_USER:?REPLICATION_USER is required}"
 : "${REPLICATION_PASSWORD:?REPLICATION_PASSWORD is required}"
 
+PATRONI_CONFIG=/etc/patroni/patroni.yml
+
 envsubst \
   '${PATRONI_NAME} ${POSTGRES_ADMIN_USER} ${POSTGRES_ADMIN_PASSWORD} ${REPLICATION_USER} ${REPLICATION_PASSWORD} ${APPLICATION_USER} ${APPLICATION_PASSWORD} ${ANALYST_USER} ${ANALYST_PASSWORD}' \
   < /etc/patroni/patroni.yml.tmpl \
-  > /tmp/patroni.yml
+  > "$PATRONI_CONFIG"
 
-chown postgres:postgres /tmp/patroni.yml
+chown root:postgres "$PATRONI_CONFIG"
+chmod 640 "$PATRONI_CONFIG"
 chown -R postgres:postgres "$PGDATA"
 chmod 700 "$PGDATA"
 
-exec gosu postgres patroni /tmp/patroni.yml
+exec gosu postgres patroni "$PATRONI_CONFIG"

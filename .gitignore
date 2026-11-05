@@ -1,3 +1,4 @@
 .DS_Store
 *.venv
 Sprint2/.env
+opencode.json
