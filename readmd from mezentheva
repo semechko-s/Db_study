@@ -1,0 +1,293 @@
+# Словарь коллекций и полей — service_center
+
+Документ описывает структуру данных сервисного центра в двух хранилищах:
+
+- **PostgreSQL** — основная реляционная схема (`service_center`), миграции `001`–`005`;
+- **MongoDB** — документная модель (`service_center`, приложение `sprint5-mongodb`).
+
+Источники: `migrations/001…005`, `security/01_roles.sql`, `mongo_db/main.go`, `mongo_db/Readme.md`.
+
+---
+
+## Часть A. PostgreSQL
+
+### A.1. Коллекции по бизнес-процессам
+
+| Бизнес-процесс | Коллекции |
+|---|---|
+| Приём и ведение заявки | `client`, `equipment`, `request`, `status_history`, `notification` |
+| Диагностика и ремонт | `employee`, `master_assignment`, `diagnosis`, `work`, `repair` |
+| Склад запчастей | `part`, `part_reservation`, `used_part` |
+| Финансы | `payment` |
+| Аудит | `audit_log` |
+| Служебные (golang-migrate) | `schema_migrations` |
+
+### A.2. Поля коллекций
+
+#### `client` — клиенты
+
+| Поле | Тип | Обяз. | Default | Ограничения | Описание |
+|---|---|:-:|---|---|---|
+| `id` | BIGINT IDENTITY | да | auto | PK | Идентификатор клиента |
+| `full_name` | VARCHAR(255) | да | — | — | ФИО клиента |
+| `phone` | VARCHAR(30) | нет | — | `client_contact_present`: `phone` или `email` не NULL | Телефон |
+| `email` | VARCHAR(255) | нет | — | то же ограничение | Email |
+
+#### `employee` — сотрудники
+
+| Поле | Тип | Обяз. | Default | Допустимые значения | Описание |
+|---|---|:-:|---|---|---|
+| `id` | BIGINT IDENTITY | да | auto | PK | Идентификатор |
+| `full_name` | VARCHAR(255) | да | — | — | ФИО |
+| `specialization` | VARCHAR(30) | нет | — | `Оператор`, `Мастер` | Специализация |
+| `phone` | VARCHAR(30) | нет | — | — | Телефон |
+| `email` | VARCHAR(255) | нет | — | — | Email |
+
+#### `equipment` — оборудование клиента
+
+| Поле | Тип | Обяз. | Default | Ограничения | Описание |
+|---|---|:-:|---|---|---|
+| `id` | BIGINT IDENTITY | да | auto | PK | Идентификатор |
+| `client_id` | BIGINT | да | — | FK → `client.id` | Владелец |
+| `type` | VARCHAR(100) | да | — | — | Тип устройства |
+| `manufacturer` | VARCHAR(100) | да | — | уникально вместе с `serial_number` | Производитель |
+| `model` | VARCHAR(100) | да | — | — | Модель |
+| `serial_number` | VARCHAR(100) | нет | — | — | Серийный номер |
+| `condition_description` | TEXT | нет | — | — | Описание состояния |
+| `status` | VARCHAR(30) | да | — | `Зарегистрировано`, `Принято в сервис`, `На диагностике`, `На ремонте`, `Готово к выдаче`, `Выдано` | Статус |
+
+#### `request` — заявка
+
+| Поле | Тип | Обяз. | Default | Допустимые значения / правила | Описание |
+|---|---|:-:|---|---|---|
+| `id` | BIGINT IDENTITY | да | auto | PK | Идентификатор |
+| `equipment_id` | BIGINT | да | — | FK → `equipment.id` | Устройство |
+| `operator_id` | BIGINT | нет | — | FK → `employee.id` | Оператор |
+| `created_at` | TIMESTAMP | да | `now()` | `received_at ≥ created_at` | Создана |
+| `received_at` | TIMESTAMP | нет | — | — | Принята в сервис |
+| `description` | TEXT | да | — | — | Описание проблемы |
+| `status` | VARCHAR(30) | да | `'Создана'` | `Создана`, `Принята`, `На диагностике`, `Ожидание`, `В ремонте`, `Готова`, `Закрыта`, `Отменена` | Статус |
+| `waiting_reason` | VARCHAR(40) | нет | — | `CLIENT_APPROVAL`, `PART_WAITING`, `ADDITIONAL_DIAGNOSTICS`, `OTHER`; только при `status='Ожидание'` | Причина ожидания |
+| `preliminary_cost` | NUMERIC(12,2) | нет | — | `≥ 0` | Предварительная стоимость |
+| `total_cost` | NUMERIC(12,2) | нет | — | `≥ 0` | Итоговая стоимость |
+| `client_approved` | BOOLEAN | да | `false` | при `status ∈ {В ремонте, Готова, Закрыта}` должно быть `true` | Согласие клиента |
+| `approval_at` | TIMESTAMP | нет | — | `(client_approved=true) = (approval_at IS NOT NULL)` | Время согласования |
+| `issued_at` | TIMESTAMP | нет | — | обязателен при `status='Закрыта'` | Выдано |
+| `completed_at` | TIMESTAMP | нет | — | — | Завершено |
+
+#### `master_assignment` — назначение мастера
+
+| Поле | Тип | Обяз. | Default | Ограничения | Описание |
+|---|---|:-:|---|---|---|
+| `id` | BIGINT IDENTITY | да | auto | PK | Идентификатор |
+| `request_id` | BIGINT | да | — | FK → `request.id`; один активный на заявку | Заявка |
+| `employee_id` | BIGINT | да | — | FK → `employee.id` | Мастер |
+| `assigned_at` | TIMESTAMP | да | `now()` | `ended_at ≥ assigned_at` | Назначен |
+| `ended_at` | TIMESTAMP | нет | — | при `is_active=true` должен быть NULL | Снят |
+| `is_active` | BOOLEAN | да | `true` | — | Активно |
+
+#### `diagnosis` — диагностика
+
+| Поле | Тип | Обяз. | Default | Ограничения | Описание |
+|---|---|:-:|---|---|---|
+| `id` | BIGINT IDENTITY | да | auto | PK | Идентификатор |
+| `request_id` | BIGINT | да | — | FK → `request.id`, UNIQUE | Заявка |
+| `master_id` | BIGINT | да | — | FK → `employee.id` | Мастер |
+| `performed_at` | TIMESTAMP | да | `now()` | — | Проведена |
+| `result` | TEXT | да | — | — | Результат |
+| `detected_malfunction` | TEXT | нет | — | — | Обнаруженная неисправность |
+
+#### `work` — работа
+
+| Поле | Тип | Обяз. | Default | Допустимые значения | Описание |
+|---|---|:-:|---|---|---|
+| `id` | BIGINT IDENTITY | да | auto | PK | Идентификатор |
+| `request_id` | BIGINT | да | — | FK → `request.id` | Заявка |
+| `started_at` | TIMESTAMP | нет | — | `ended_at ≥ started_at` | Начало |
+| `ended_at` | TIMESTAMP | нет | — | — | Окончание |
+| `status` | VARCHAR(30) | да | `'Запланирована'` | `Запланирована`, `Согласована`, `Выполняется`, `Завершена`, `Отменена` | Статус |
+| `cost` | NUMERIC(12,2) | да | — | `≥ 0` | Стоимость |
+
+#### `repair` — ремонт
+
+| Поле | Тип | Обяз. | Default | Допустимые значения / правила | Описание |
+|---|---|:-:|---|---|---|
+| `id` | BIGINT IDENTITY | да | auto | PK | Идентификатор |
+| `work_id` | BIGINT | да | — | FK → `work.id` | Работа |
+| `master_id` | BIGINT | да | — | FK → `employee.id` | Мастер |
+| `description` | TEXT | да | — | — | Описание |
+| `cost` | NUMERIC(12,2) | да | — | `≥ 0` | Стоимость |
+| `result` | TEXT | нет | — | обязателен при `status='Завершён'` | Результат |
+| `started_at` | TIMESTAMP | нет | — | `ended_at ≥ started_at` | Начало |
+| `ended_at` | TIMESTAMP | нет | — | — | Окончание |
+| `status` | VARCHAR(30) | да | `'Запланирован'` | `Запланирован`, `Выполняется`, `Приостановлен`, `Завершён`, `Отменён` | Статус |
+
+#### `part` — запчасть
+
+| Поле | Тип | Обяз. | Default | Ограничения | Описание |
+|---|---|:-:|---|---|---|
+| `id` | BIGINT IDENTITY | да | auto | PK | Идентификатор |
+| `name` | VARCHAR(255) | да | — | — | Название |
+| `article` | VARCHAR(100) | нет | — | индекс `idx_part_article` | Артикул |
+| `price` | NUMERIC(12,2) | да | — | `≥ 0` | Цена |
+| `stock_quantity` | INTEGER | да | `0` | `≥ 0` | Остаток на складе |
+
+#### `part_reservation` — резервирование запчасти
+
+| Поле | Тип | Обяз. | Default | Допустимые значения / правила | Описание |
+|---|---|:-:|---|---|---|
+| `id` | BIGINT IDENTITY | да | auto | PK | Идентификатор |
+| `repair_id` | BIGINT | да | — | FK → `repair.id`; один активный резерв на пару `(repair_id, part_id)` | Ремонт |
+| `part_id` | BIGINT | да | — | FK → `part.id` | Запчасть |
+| `quantity` | INTEGER | да | — | `> 0` | Количество |
+| `reserved_at` | TIMESTAMP | да | `now()` | индекс `idx_part_reservation_active_reserved_at` | Зарезервировано |
+| `status` | VARCHAR(30) | да | `'Активен'` | `Активен`, `Использован`, `Отменён` | Статус |
+
+Триггер `trg_check_part_reservation_stock` (миграция 003) блокирует строку `part` (`SELECT ... FOR UPDATE`) и не даёт сумме активных резервов превысить `stock_quantity`.
+
+#### `used_part` — списанная запчасть
+
+| Поле | Тип | Обяз. | Default | Ограничения | Описание |
+|---|---|:-:|---|---|---|
+| `id` | BIGINT IDENTITY | да | auto | PK | Идентификатор |
+| `repair_id` | BIGINT | да | — | FK → `repair.id`; уникальная пара `(repair_id, part_id)` | Ремонт |
+| `part_id` | BIGINT | да | — | FK → `part.id` | Запчасть |
+| `quantity` | INTEGER | да | — | `> 0` | Количество |
+| `written_off_at` | TIMESTAMP | да | `now()` | — | Списано |
+
+#### `payment` — платёж
+
+| Поле | Тип | Обяз. | Default | Допустимые значения / правила | Описание |
+|---|---|:-:|---|---|---|
+| `id` | BIGINT IDENTITY | да | auto | PK | Идентификатор |
+| `request_id` | BIGINT | да | — | FK → `request.id`, UNIQUE | Заявка |
+| `amount` | NUMERIC(12,2) | да | — | `≥ 0`; при `amount=0` статус `Не требуется`, при `amount>0` — `Оплачено` | Сумма |
+| `paid_at` | TIMESTAMP | нет | — | `(status='Оплачено') = (paid_at IS NOT NULL)` | Оплачено |
+| `method` | VARCHAR(30) | нет | — | — | Способ оплаты |
+| `status` | VARCHAR(30) | да | — | `Оплачено`, `Не требуется` | Статус |
+
+#### `status_history` — история статусов
+
+| Поле | Тип | Обяз. | Default | Допустимые значения / правила | Описание |
+|---|---|:-:|---|---|---|
+| `id` | BIGINT IDENTITY | да | auto | PK | Идентификатор |
+| `request_id` | BIGINT | да | — | FK → `request.id` | Заявка |
+| `old_status` | VARCHAR(30) | нет | — | `old_status IS DISTINCT FROM new_status` | Прежний статус |
+| `new_status` | VARCHAR(30) | да | — | тот же перечень, что у `request.status` | Новый статус |
+| `reason` | VARCHAR(255) | нет | — | — | Причина |
+| `changed_at` | TIMESTAMP | да | `now()` | индекс `idx_status_history_request` | Время смены |
+
+#### `notification` — уведомление
+
+| Поле | Тип | Обяз. | Default | Допустимые значения | Описание |
+|---|---|:-:|---|---|---|
+| `id` | BIGINT IDENTITY | да | auto | PK | Идентификатор |
+| `request_id` | BIGINT | да | — | FK → `request.id` | Заявка |
+| `event_type` | VARCHAR(50) | да | — | — | Тип события |
+| `created_at` | TIMESTAMP | да | `now()` | — | Создано |
+| `delivery_status` | VARCHAR(30) | да | `'Ожидает отправки'` | `Ожидает отправки`, `Отправлено`, `Ошибка` | Статус доставки |
+
+#### `audit_log` — аудит критических операций
+
+| Поле | Тип | Обяз. | Default | Описание |
+|---|---|:-:|---|---|
+| `id` | BIGINT IDENTITY | да | auto | PK |
+| `table_name` | VARCHAR(50) | да | — | Имя отслеживаемой таблицы |
+| `operation` | CHAR(1) | да | — | `I` / `U` / `D` |
+| `record_id` | BIGINT | да | — | `id` изменённой строки |
+| `changed_by` | TEXT | да | `current_user` | Кто изменил |
+| `changed_at` | TIMESTAMP | да | `now()` | Когда |
+| `old_data` | JSONB | нет | — | Снимок строки до изменения |
+| `new_data` | JSONB | нет | — | Снимок строки после изменения |
+
+Индекс: `idx_audit_log_record(table_name, record_id, changed_at DESC)`.
+
+**Отслеживаемые таблицы и события:**
+
+| Таблица | События |
+|---|---|
+| `request` | INSERT, UPDATE, DELETE |
+| `payment` | INSERT, UPDATE, DELETE |
+| `part` | UPDATE (`price`, `stock_quantity`), DELETE |
+| `part_reservation` | INSERT, UPDATE, DELETE |
+| `used_part` | INSERT, DELETE |
+
+#### `schema_migrations` — служебная таблица golang-migrate
+
+Не создаётся миграциями вручную; ведётся `golang-migrate` (поля `version`, `dirty`).
+
+### A.3. Роли и доступ
+
+| Роль | Назначение | Доступ к `audit_log` |
+|---|---|---|
+| `service_admin` | администратор проекта | ALL |
+| `service_app` | приложение | SELECT, INSERT |
+| `service_analyst` | аналитика | SELECT |
+| `service_migrator` | миграции (владелец объектов) | владелец |
+
+---
+
+## Часть B. MongoDB
+
+Источник: `mongo_db/main.go`, `mongo_db/Readme.md`. База `service_center`, адрес `mongodb://localhost:27017`.
+
+### B.1. Коллекции
+
+| Коллекция в коде | Коллекция в README | Назначение |
+|---|---|---|
+| `clients` | `clients` | Клиенты |
+| `requests` | `service_requests` | Заявки |
+| `parts` | `parts` | Запчасти |
+
+> ⚠️ **Расхождение:** в коде используется `db.Collection("requests")`, в README — `service_requests`. Нужно привести к одному имени, иначе данные попадут в разные коллекции.
+
+### B.2. `clients`
+
+| Поле | Тип | Описание |
+|---|---|---|
+| `_id` | ObjectID | Идентификатор |
+| `name` | string | Имя |
+| `phone` | string | Телефон |
+| `email` | string | Email (в `main.go` не заполняется) |
+
+### B.3. `requests` (`service_requests`)
+
+| Поле | Тип | Описание |
+|---|---|---|
+| `_id` | ObjectID | Идентификатор |
+| `client_id` | ObjectID | Ссылка на `clients._id` (referencing, 1:N) |
+| `equipment` | embedded object | `{name, model, manufacturer?}` |
+| `description` | string | Описание проблемы |
+| `status` | string | Статус (`Новая`, `В работе`, `Готово`, …) |
+| `parts` | array of `{part_id: ObjectID, quantity: int}` | Использованные запчасти (M:N) |
+| `date` | datetime | Дата создания (в README — `created_at`) |
+| `repair` | object | Информация о ремонте (в README; в коде не создаётся) |
+
+### B.4. `parts`
+
+| Поле | Тип | Описание |
+|---|---|---|
+| `_id` | ObjectID | Идентификатор |
+| `name` | string | Название |
+| `price` | number | Цена |
+| `stock` | int | Остаток (в README; в коде не заполняется) |
+
+### B.5. Подходы к моделированию
+
+| Подход | Где применён | Обоснование |
+|---|---|---|
+| Embedding | `requests.equipment` | Читается вместе с заявкой, редко обновляется независимо |
+| Referencing | `requests.client_id`, `requests.parts[].part_id` | 1:N и M:N, избегаем дублирования |
+
+---
+
+## Замечания к согласованности
+
+1. **MongoDB:** согласовать имя коллекции заявок — `requests` в коде или `service_requests` в README.
+2. **MongoDB:** поля `email`, `stock`, `repair`, `created_at`/`date` описаны в README, но не создаются в `main.go`. Либо добавить в код, либо убрать из README.
+3. **PostgreSQL:** в `migrations/README.md` версия после `make up` указана как `2`, фактически после миграции 005 — `5`; в структуре отсутствуют файлы 003–005.
+4. **`audit_log`:** права выдаются в `security/01_roles.sql` (в `DO`-блоке с проверкой существования таблицы), поэтому порядок: `01_roles.sql` → `make up` → при необходимости повторно `01_roles.sql`.
+
+
+
+Это нужно?
