@@ -59,7 +59,7 @@ DROPDB = dropdb \
 # ============================================================
 
 .PHONY: help
-.PHONY: test-db migrate test-data test full-check
+.PHONY: test-db migrate test-data test query-check full-check
 .PHONY: clean connect reset
 
 
@@ -71,7 +71,8 @@ help:
 	@echo "  make test-db      Создать тестовую БД"
 	@echo "  make migrate      Применить миграции"
 	@echo "  make test-data    Загрузить тестовые данные"
-	@echo "  make test         Запустить автоматические проверки"
+	@echo "  make test         Запустить проверки ограничений"
+	@echo "  make query-check  Проверить результаты 8 аналитических SQL-запросов"
 	@echo "  make full-check   Полный цикл тестирования"
 	@echo "  make reset        Пересоздать тестовую БД"
 	@echo "  make clean        Удалить тестовую БД"
@@ -143,6 +144,33 @@ test: reset
 	@echo "=========================================="
 	@echo "ТЕСТИРОВАНИЕ ЗАВЕРШЕНО"
 	@echo "=========================================="
+
+
+# ============================================================
+# АНАЛИТИЧЕСКИЕ SQL-ЗАПРОСЫ
+# ============================================================
+
+## Проверить результаты всех запросов из каталога business_queries.sql.
+## Пересоздаётся только TEST_DB (по умолчанию service_center_test).
+query-check: reset
+	@echo ""
+	@echo "Загрузка базовых тестовых данных..."
+	$(PSQL) -d $(TEST_DB) -f test_data.sql
+
+	@echo ""
+	@echo "Загрузка дополнительных данных для аналитики..."
+	$(PSQL) -d $(TEST_DB) -f query_test_data.sql
+
+	@echo ""
+	@echo "Выполнение каталога аналитических запросов..."
+	$(PSQL) -d $(TEST_DB) -f $(PROJECT_DIR)/queries/business_queries.sql
+
+	@echo ""
+	@echo "Проверка ожидаемых результатов..."
+	$(PSQL) -d $(TEST_DB) -f automated_query_checks.sql
+
+	@echo ""
+	@echo "Все проверки аналитических запросов пройдены"
 
 
 # ============================================================

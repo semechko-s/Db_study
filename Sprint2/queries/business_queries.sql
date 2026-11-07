@@ -50,7 +50,7 @@ JOIN employee m
 WHERE rp.status = $1
 ORDER BY r.id, w.id, rp.id;
 
-EXECUTE get_works('Выполняяется');
+EXECUTE get_works('Выполняется');
 
 -- Контроль зарезервированных запчастей
 PREPARE get_parts (text) AS
@@ -121,7 +121,7 @@ GROUP BY
 HAVING SUM(p.amount) >= $1
 ORDER BY total_paid DESC;
 
-EXECUTE get_sum(50000.00);
+EXECUTE get_sum(5000.00);
 
 -- Рейтинг мастеров по завершённым ремонтам
 WITH master_stats AS (
