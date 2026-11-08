@@ -1,5 +1,10 @@
--- Просмотр заявок сервисного центра
-PREPARE get_requests (text) AS
+-- Каталог аналитических запросов сервисного центра.
+-- Каждый запрос объявлен как временное представление: так автоматические
+-- проверки используют ровно тот же SQL, который выводится ниже.
+-- Представления живут только в текущем подключении psql.
+
+-- 1. Просмотр заявок по статусу.
+CREATE TEMP VIEW query_01_requests AS
 SELECT
     r.id AS request_id,
     c.full_name AS client_name,
@@ -16,13 +21,13 @@ FROM request r
 JOIN equipment e ON e.id = r.equipment_id
 JOIN client c ON c.id = e.client_id
 LEFT JOIN employee op ON op.id = r.operator_id
-WHERE r.status = $1
+WHERE r.status = 'В ремонте'
 ORDER BY r.created_at DESC;
 
-EXECUTE get_requests('В ремонте');
+SELECT * FROM query_01_requests;
 
--- Контроль выполнения ремонтных работ
-PREPARE get_works (text) AS
+-- 2. Контроль выполнения ремонтных работ.
+CREATE TEMP VIEW query_02_works AS
 SELECT
     r.id AS request_id,
     c.full_name AS client_name,
@@ -37,23 +42,18 @@ SELECT
     rp.cost AS repair_cost,
     m.full_name AS master_name
 FROM request r
-JOIN equipment e
-    ON e.id = r.equipment_id
-JOIN client c
-    ON c.id = e.client_id
-JOIN work w
-    ON w.request_id = r.id
-JOIN repair rp
-    ON rp.work_id = w.id
-JOIN employee m
-    ON m.id = rp.master_id
-WHERE rp.status = $1
+JOIN equipment e ON e.id = r.equipment_id
+JOIN client c ON c.id = e.client_id
+JOIN work w ON w.request_id = r.id
+JOIN repair rp ON rp.work_id = w.id
+JOIN employee m ON m.id = rp.master_id
+WHERE rp.status = 'Выполняется'
 ORDER BY r.id, w.id, rp.id;
 
-EXECUTE get_works('Выполняется');
+SELECT * FROM query_02_works;
 
--- Контроль зарезервированных запчастей
-PREPARE get_parts (text) AS
+-- 3. Контроль зарезервированных запчастей.
+CREATE TEMP VIEW query_03_parts AS
 SELECT
     pr.id AS reservation_id,
     p.name AS part_name,
@@ -67,63 +67,53 @@ SELECT
     e.manufacturer,
     e.model
 FROM part_reservation pr
-JOIN part p
-    ON p.id = pr.part_id
-JOIN repair rp
-    ON rp.id = pr.repair_id
-JOIN work w
-    ON w.id = rp.work_id
-JOIN request r
-    ON r.id = w.request_id
-JOIN equipment e
-    ON e.id = r.equipment_id
-JOIN client c
-    ON c.id = e.client_id
-WHERE pr.status = $1
+JOIN part p ON p.id = pr.part_id
+JOIN repair rp ON rp.id = pr.repair_id
+JOIN work w ON w.id = rp.work_id
+JOIN request r ON r.id = w.request_id
+JOIN equipment e ON e.id = r.equipment_id
+JOIN client c ON c.id = e.client_id
+WHERE pr.status = 'Активен'
 ORDER BY pr.reserved_at DESC;
 
-EXECUTE get_parts('Активен');
+SELECT * FROM query_03_parts;
 
--- Анализ количества заявок по клиентам
+-- 4. Анализ количества заявок по клиентам.
+CREATE TEMP VIEW query_04_client_stats AS
 SELECT
     c.id AS client_id,
     c.full_name AS client_name,
     COUNT(r.id) AS request_count,
     COALESCE(SUM(r.preliminary_cost), 0) AS total_preliminary_cost
 FROM client c
-LEFT JOIN equipment e
-    ON e.client_id = c.id
-LEFT JOIN request r
-    ON r.equipment_id = e.id
-GROUP BY
-    c.id,
-    c.full_name
+LEFT JOIN equipment e ON e.client_id = c.id
+LEFT JOIN request r ON r.equipment_id = e.id
+GROUP BY c.id, c.full_name
 ORDER BY request_count DESC, c.full_name;
 
--- Поиск клиентов с крупными расходами на ремонт
-PREPARE get_sum (decimal) AS
+SELECT * FROM query_04_client_stats;
+
+-- 5. Поиск клиентов с крупными расходами на ремонт.
+-- Порог: 5000.00; он же проверяется в automated_query_checks.sql.
+CREATE TEMP VIEW query_05_large_spending AS
 SELECT
     c.id AS client_id,
     c.full_name AS client_name,
     COUNT(p.id) AS payment_count,
     SUM(p.amount) AS total_paid
 FROM client c
-JOIN equipment e
-    ON e.client_id = c.id
-JOIN request r
-    ON r.equipment_id = e.id
-JOIN payment p
-    ON p.request_id = r.id
+JOIN equipment e ON e.client_id = c.id
+JOIN request r ON r.equipment_id = e.id
+JOIN payment p ON p.request_id = r.id
 WHERE p.status = 'Оплачено'
-GROUP BY
-    c.id,
-    c.full_name
-HAVING SUM(p.amount) >= $1
+GROUP BY c.id, c.full_name
+HAVING SUM(p.amount) >= 5000.00
 ORDER BY total_paid DESC;
 
-EXECUTE get_sum(5000.00);
+SELECT * FROM query_05_large_spending;
 
--- Рейтинг мастеров по завершённым ремонтам
+-- 6. Рейтинг мастеров по завершённым ремонтам.
+CREATE TEMP VIEW query_06_master_ranking AS
 WITH master_stats AS (
     SELECT
         m.id AS master_id,
@@ -133,16 +123,11 @@ WITH master_stats AS (
         ROUND(SUM(rp.cost), 2) AS total_repair_cost,
         ROUND(AVG(rp.cost), 2) AS avg_repair_cost
     FROM repair rp
-    JOIN employee m
-        ON m.id = rp.master_id
-    JOIN work w
-        ON w.id = rp.work_id
-    JOIN request r
-        ON r.id = w.request_id
+    JOIN employee m ON m.id = rp.master_id
+    JOIN work w ON w.id = rp.work_id
+    JOIN request r ON r.id = w.request_id
     WHERE rp.status = 'Завершён'
-    GROUP BY
-        m.id,
-        m.full_name
+    GROUP BY m.id, m.full_name
 )
 SELECT
     master_id,
@@ -161,7 +146,10 @@ SELECT
 FROM master_stats
 ORDER BY master_rank, master_name;
 
--- Помесячная динамика оплат: LAG, накопительный итог и скользящее среднее
+SELECT * FROM query_06_master_ranking;
+
+-- 7. Помесячная динамика оплат: LAG, накопительный итог и скользящее среднее.
+CREATE TEMP VIEW query_07_monthly_payments AS
 WITH monthly_payments AS (
     SELECT
         date_trunc('month', p.paid_at)::date AS month,
@@ -169,12 +157,10 @@ WITH monthly_payments AS (
         COUNT(DISTINCT r.id) AS request_count,
         SUM(p.amount) AS revenue
     FROM payment p
-    JOIN request r
-        ON r.id = p.request_id
+    JOIN request r ON r.id = p.request_id
     WHERE p.status = 'Оплачено'
       AND p.paid_at IS NOT NULL
-    GROUP BY
-        date_trunc('month', p.paid_at)::date
+    GROUP BY date_trunc('month', p.paid_at)::date
 ),
 revenue_with_lag AS (
     SELECT
@@ -212,7 +198,10 @@ SELECT
 FROM revenue_with_lag
 ORDER BY month;
 
--- Анализ длительности статусов заявки: LEAD и нумерация шагов
+SELECT * FROM query_07_monthly_payments;
+
+-- 8. Анализ длительности статусов заявки: LEAD и нумерация шагов.
+CREATE TEMP VIEW query_08_status_duration AS
 WITH status_events AS (
     SELECT
         sh.id,
@@ -254,11 +243,10 @@ SELECT
         2
     ) AS hours_in_status
 FROM status_events se
-JOIN request r
-    ON r.id = se.request_id
-JOIN equipment e
-    ON e.id = r.equipment_id
-JOIN client c
-    ON c.id = e.client_id
+JOIN request r ON r.id = se.request_id
+JOIN equipment e ON e.id = r.equipment_id
+JOIN client c ON c.id = e.client_id
 WHERE se.next_changed_at IS NOT NULL
 ORDER BY se.request_id, se.step_number;
+
+SELECT * FROM query_08_status_duration;

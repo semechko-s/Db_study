@@ -4,22 +4,15 @@
 #
 # Запускать из директории test:
 #
-#   make test-data   — создать тестовую БД, применить миграции
-#                      и загрузить тестовые данные
-#
-#   make test        — создать тестовую БД, применить миграции
-#                      и запустить автоматические проверки
-#
-#   make full-check  — полный сценарий:
-#                      схема -> данные -> проверки -> удаление БД
-#
+#   make test-data   — создать тестовую БД и загрузить данные
+#   make test        — проверить ограничения
+#   make query-check — проверить 8 аналитических SQL-запросов
+#   make full-check  — полный сценарий тестирования
 #   make clean       — удалить тестовую БД
-#
 #   make connect     — подключиться к тестовой БД
 #
 # Можно изменить имя БД:
-#
-#   make test TEST_DB=my_test_db
+#   make query-check TEST_DB=my_test_db
 #
 # ============================================================
 
@@ -28,13 +21,13 @@
 # НАСТРОЙКИ
 # ============================================================
 
-TEST_DB      ?= service_center_test
+TEST_DB        ?= service_center_test
 
-PSQL_USER    ?= $(USER)
-PSQL_HOST    ?= localhost
-PSQL_PORT    ?= 5432
+PSQL_USER      ?= $(USER)
+PSQL_HOST      ?= localhost
+PSQL_PORT      ?= 5432
 
-PROJECT_DIR  := ..
+PROJECT_DIR    := ..
 MIGRATIONS_DIR := $(PROJECT_DIR)/migrations
 
 PSQL = psql \
@@ -58,12 +51,10 @@ DROPDB = dropdb \
 # ЦЕЛИ
 # ============================================================
 
-.PHONY: help
-.PHONY: test-db migrate test-data test query-check full-check
+.PHONY: help test-db migrate test-data test query-check full-check
 .PHONY: clean connect reset
 
 
-## Показать доступные команды
 help:
 	@echo ""
 	@echo "Тестирование базы данных service_center"
@@ -72,7 +63,7 @@ help:
 	@echo "  make migrate      Применить миграции"
 	@echo "  make test-data    Загрузить тестовые данные"
 	@echo "  make test         Запустить проверки ограничений"
-	@echo "  make query-check  Проверить результаты 8 аналитических SQL-запросов"
+	@echo "  make query-check  Проверить 8 аналитических SQL-запросов"
 	@echo "  make full-check   Полный цикл тестирования"
 	@echo "  make reset        Пересоздать тестовую БД"
 	@echo "  make clean        Удалить тестовую БД"
@@ -84,14 +75,12 @@ help:
 # ТЕСТОВАЯ БД
 # ============================================================
 
-## Создать тестовую БД
 test-db:
 	@echo "Создание тестовой БД: $(TEST_DB)"
 	@$(CREATEDB) $(TEST_DB) 2>/dev/null || \
 		echo "БД $(TEST_DB) уже существует"
 
 
-## Применить миграции
 migrate: test-db
 	@echo ""
 	@echo "Применение миграции 001..."
@@ -113,13 +102,11 @@ migrate: test-db
 # ТЕСТОВЫЕ ДАННЫЕ
 # ============================================================
 
-## Создать чистую БД и загрузить тестовые данные
 test-data: reset
 	@echo ""
 	@echo "Загрузка тестовых данных..."
 
-	$(PSQL) -d $(TEST_DB) \
-		-f test_data.sql
+	$(PSQL) -d $(TEST_DB) -f test_data.sql
 
 	@echo ""
 	@echo "Тестовые данные успешно загружены"
@@ -129,7 +116,6 @@ test-data: reset
 # АВТОМАТИЧЕСКИЕ ТЕСТЫ
 # ============================================================
 
-## Создать чистую БД и запустить проверки ограничений
 test: reset
 	@echo ""
 	@echo "=========================================="
@@ -137,8 +123,7 @@ test: reset
 	@echo "=========================================="
 	@echo ""
 
-	$(PSQL) -d $(TEST_DB) \
-		-f automated_constraint_checks.sql
+	$(PSQL) -d $(TEST_DB) -f automated_constraint_checks.sql
 
 	@echo ""
 	@echo "=========================================="
@@ -150,8 +135,6 @@ test: reset
 # АНАЛИТИЧЕСКИЕ SQL-ЗАПРОСЫ
 # ============================================================
 
-## Проверить результаты всех запросов из каталога business_queries.sql.
-## Пересоздаётся только TEST_DB (по умолчанию service_center_test).
 query-check: reset
 	@echo ""
 	@echo "Загрузка базовых тестовых данных..."
@@ -162,12 +145,9 @@ query-check: reset
 	$(PSQL) -d $(TEST_DB) -f query_test_data.sql
 
 	@echo ""
-	@echo "Выполнение каталога аналитических запросов..."
-	$(PSQL) -d $(TEST_DB) -f $(PROJECT_DIR)/queries/business_queries.sql
+	@echo "Выполнение аналитических запросов и проверка результатов..."
 
-	@echo ""
-	@echo "Проверка ожидаемых результатов..."
-	$(PSQL) -d $(TEST_DB) -f automated_query_checks.sql
+	$(PSQL) -d $(TEST_DB) -f $(PROJECT_DIR)/queries/business_queries.sql -f automated_query_checks.sql
 
 	@echo ""
 	@echo "Все проверки аналитических запросов пройдены"
@@ -177,23 +157,20 @@ query-check: reset
 # ПОЛНЫЙ СЦЕНАРИЙ
 # ============================================================
 
-## Схема -> данные -> проверки -> удаление БД
 full-check: reset
 	@echo ""
 	@echo "=========================================="
 	@echo "1. ЗАГРУЗКА ТЕСТОВЫХ ДАННЫХ"
 	@echo "=========================================="
 
-	$(PSQL) -d $(TEST_DB) \
-		-f test_data.sql
+	$(PSQL) -d $(TEST_DB) -f test_data.sql
 
 	@echo ""
 	@echo "=========================================="
 	@echo "2. ПРОВЕРКА ОГРАНИЧЕНИЙ"
 	@echo "=========================================="
 
-	$(PSQL) -d $(TEST_DB) \
-		-f automated_constraint_checks.sql
+	$(PSQL) -d $(TEST_DB) -f automated_constraint_checks.sql
 
 	@echo ""
 	@echo "=========================================="
@@ -212,7 +189,6 @@ full-check: reset
 # RESET / CLEAN
 # ============================================================
 
-## Полностью пересоздать тестовую БД
 reset:
 	@echo "Пересоздание тестовой БД $(TEST_DB)..."
 
@@ -238,7 +214,6 @@ reset:
 	@echo "Схема тестовой БД готова"
 
 
-## Удалить тестовую БД
 clean:
 	@echo "Удаление тестовой БД $(TEST_DB)..."
 	@$(DROPDB) --force $(TEST_DB)
@@ -249,6 +224,5 @@ clean:
 # ПОДКЛЮЧЕНИЕ
 # ============================================================
 
-## Подключиться к тестовой БД через psql
 connect:
 	$(PSQL) -d $(TEST_DB)
