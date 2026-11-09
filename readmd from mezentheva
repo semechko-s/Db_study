@@ -1,11 +1,11 @@
-# Словарь коллекций и полей — service_center
+# Словарь коллекций и полей — service_center (sprint5)
 
-Документ описывает структуру данных сервисного центра в двух хранилищах:
+Документ описывает данные сервисного центра в двух хранилищах:
 
-- **PostgreSQL** — основная реляционная схема (`service_center`), миграции `001`–`005`;
-- **MongoDB** — документная модель (`service_center`, приложение `sprint5-mongodb`).
+- **PostgreSQL** — транзакционная схема (`service_center`), миграции `001`–`005`;
+- **MongoDB** — документная модель (`service_center`), приложение `sprint5-mongodb`.
 
-Источники: `migrations/001…005`, `security/01_roles.sql`, `mongo_db/main.go`, `mongo_db/Readme.md`.
+Источники: `migrations/001…005`, `infra/postgres-replication/primary/init/*`, `security/01_roles.sql`, `mongo_db/main.go`, `mongo_db/Readme.md`, `README.md` (корневой).
 
 ---
 
@@ -19,8 +19,9 @@
 | Диагностика и ремонт | `employee`, `master_assignment`, `diagnosis`, `work`, `repair` |
 | Склад запчастей | `part`, `part_reservation`, `used_part` |
 | Финансы | `payment` |
-| Аудит | `audit_log` |
+| Аудит | `audit_log` (миграция 005) |
 | Служебные (golang-migrate) | `schema_migrations` |
+| Служебные (HA-стенд) | `app.replication_probe` |
 
 ### A.2. Поля коллекций
 
@@ -80,7 +81,7 @@
 | Поле | Тип | Обяз. | Default | Ограничения | Описание |
 |---|---|:-:|---|---|---|
 | `id` | BIGINT IDENTITY | да | auto | PK | Идентификатор |
-| `request_id` | BIGINT | да | — | FK → `request.id`; один активный на заявку | Заявка |
+| `request_id` | BIGINT | да | — | FK → `request.id`; один активный на заявку (`uq_master_assignment_one_active_per_request`) | Заявка |
 | `employee_id` | BIGINT | да | — | FK → `employee.id` | Мастер |
 | `assigned_at` | TIMESTAMP | да | `now()` | `ended_at ≥ assigned_at` | Назначен |
 | `ended_at` | TIMESTAMP | нет | — | при `is_active=true` должен быть NULL | Снят |
@@ -96,6 +97,8 @@
 | `performed_at` | TIMESTAMP | да | `now()` | — | Проведена |
 | `result` | TEXT | да | — | — | Результат |
 | `detected_malfunction` | TEXT | нет | — | — | Обнаруженная неисправность |
+
+> **Связь с MongoDB.** `diagnosis` — юридически значимый краткий итог. Подробный протокол диагностики хранится в `diagnostic_reports` (MongoDB) и ссылается на `pg_request_id` / `pg_diagnosis_id`.
 
 #### `work` — работа
 
@@ -128,9 +131,11 @@
 |---|---|:-:|---|---|---|
 | `id` | BIGINT IDENTITY | да | auto | PK | Идентификатор |
 | `name` | VARCHAR(255) | да | — | — | Название |
-| `article` | VARCHAR(100) | нет | — | индекс `idx_part_article` | Артикул |
+| `article` | VARCHAR(100) | нет | — | индекс `idx_part_article`; в корневом README указан UNIQUE — **проверить** | Артикул |
 | `price` | NUMERIC(12,2) | да | — | `≥ 0` | Цена |
 | `stock_quantity` | INTEGER | да | `0` | `≥ 0` | Остаток на складе |
+
+> **Связь с MongoDB.** `name`, `article`, `price`, `stock_quantity` — источник истины. В `parts_catalog.pg_snapshot` хранится копия `name`/`article` для поиска; при расхождении побеждает PostgreSQL.
 
 #### `part_reservation` — резервирование запчасти
 
@@ -177,6 +182,8 @@
 | `reason` | VARCHAR(255) | нет | — | — | Причина |
 | `changed_at` | TIMESTAMP | да | `now()` | индекс `idx_status_history_request` | Время смены |
 
+> **Связь с MongoDB.** `status_history` — единственный источник истины по статусам. События `status_changed` в `request_events` — проекция, связанная через `pg_status_history_id`.
+
 #### `notification` — уведомление
 
 | Поле | Тип | Обяз. | Default | Допустимые значения | Описание |
@@ -187,7 +194,7 @@
 | `created_at` | TIMESTAMP | да | `now()` | — | Создано |
 | `delivery_status` | VARCHAR(30) | да | `'Ожидает отправки'` | `Ожидает отправки`, `Отправлено`, `Ошибка` | Статус доставки |
 
-#### `audit_log` — аудит критических операций
+#### `audit_log` — аудит критических операций (миграция 005)
 
 | Поле | Тип | Обяз. | Default | Описание |
 |---|---|:-:|---|---|
@@ -212,6 +219,16 @@
 | `part_reservation` | INSERT, UPDATE, DELETE |
 | `used_part` | INSERT, DELETE |
 
+#### `app.replication_probe` — служебная таблица HA-стенда
+
+Создаётся в `infra/postgres-replication/primary/init/01-initialize-cluster.sh`.
+
+| Поле | Тип | Обяз. | Default | Описание |
+|---|---|:-:|---|---|
+| `id` | BIGINT IDENTITY | да | auto | PK |
+| `marker` | TEXT | да | — | UNIQUE; метка контрольной записи |
+| `created_at` | TIMESTAMPTZ | да | `clock_timestamp()` | Время создания |
+
 #### `schema_migrations` — служебная таблица golang-migrate
 
 Не создаётся миграциями вручную; ведётся `golang-migrate` (поля `version`, `dirty`).
@@ -225,69 +242,114 @@
 | `service_analyst` | аналитика | SELECT |
 | `service_migrator` | миграции (владелец объектов) | владелец |
 
+На HA-стенде роли создаются скриптом `01-initialize-cluster.sh` (`course_admin`, `service_app`, `service_analyst`, `replicator`), а права на `public` и `app` выдаются через `ALTER DEFAULT PRIVILEGES FOR ROLE course_admin`.
+
 ---
 
 ## Часть B. MongoDB
 
-Источник: `mongo_db/main.go`, `mongo_db/Readme.md`. База `service_center`, адрес `mongodb://localhost:27017`.
+Источник: `mongo_db/main.go`, `mongo_db/Readme.md`. База `service_center`, адрес `mongodb://localhost:27017` (переопределяется `MONGODB_URI`).
 
 ### B.1. Коллекции
 
-| Коллекция в коде | Коллекция в README | Назначение |
+| Коллекция | Назначение | Источник истины для |
 |---|---|---|
-| `clients` | `clients` | Клиенты |
-| `requests` | `service_requests` | Заявки |
-| `parts` | `parts` | Запчасти |
+| `equipment_models` | Справочник моделей техники и типовых неисправностей | Описание модели |
+| `parts_catalog` | Атрибуты деталей и совместимость с моделями | Характеристики и совместимость |
+| `diagnostic_reports` | Подробные протоколы диагностики | Детали диагностики |
+| `request_events` | Лента событий заявки | Всё, кроме переходов статусов |
 
-> ⚠️ **Расхождение:** в коде используется `db.Collection("requests")`, в README — `service_requests`. Нужно привести к одному имени, иначе данные попадут в разные коллекции.
+### B.2. `equipment_models`
 
-### B.2. `clients`
+| Поле | Тип | Обяз. | Индекс / правило | Описание |
+|---|---|:-:|---|---|
+| `_id` | ObjectID | да | PK | Идентификатор модели |
+| `type` | string | да | `minLength: 1` | Тип техники (`laptop`, `phone`, …) |
+| `manufacturer` | string | да | `minLength: 1` | Производитель |
+| `model` | string | да | `minLength: 1` | Модель |
+| `model_key` | string | да | UNIQUE | `lower(manufacturer)\|lower(model)` |
+| `specs` | object | да | — | Характеристики, набор зависит от типа |
+| `common_faults` | array | нет | — | Типовые неисправности |
+| `typical_cost_range` | object | нет | — | Ориентировочный диапазон стоимости |
 
-| Поле | Тип | Описание |
-|---|---|---|
-| `_id` | ObjectID | Идентификатор |
-| `name` | string | Имя |
-| `phone` | string | Телефон |
-| `email` | string | Email (в `main.go` не заполняется) |
+Валидатор: `$jsonSchema`, `validationLevel: strict`, `validationAction: error`.
 
-### B.3. `requests` (`service_requests`)
+### B.3. `parts_catalog`
 
-| Поле | Тип | Описание |
-|---|---|---|
-| `_id` | ObjectID | Идентификатор |
-| `client_id` | ObjectID | Ссылка на `clients._id` (referencing, 1:N) |
-| `equipment` | embedded object | `{name, model, manufacturer?}` |
-| `description` | string | Описание проблемы |
-| `status` | string | Статус (`Новая`, `В работе`, `Готово`, …) |
-| `parts` | array of `{part_id: ObjectID, quantity: int}` | Использованные запчасти (M:N) |
-| `date` | datetime | Дата создания (в README — `created_at`) |
-| `repair` | object | Информация о ремонте (в README; в коде не создаётся) |
+| Поле | Тип | Обяз. | Индекс / правило | Описание |
+|---|---|:-:|---|---|
+| `_id` | ObjectID | да | PK | Идентификатор записи каталога |
+| `pg_part_id` | long | да | UNIQUE, `> 0` | Ссылка на `part.id` в PostgreSQL |
+| `category` | string | да | `minLength: 1` | Категория (`battery`, `thermal_paste`, …) |
+| `attributes` | object | да | — | Атрибуты, зависящие от категории |
+| `compatible_model_ids` | array<ObjectID> | да | multikey-индекс; каждый элемент существует в `equipment_models` | Совместимые модели (M:N) |
+| `install_notes` | string | нет | `minLength: 1` | Заметки по установке |
+| `pg_snapshot` | object | нет | `required: name, article, synced_at` | Копия `name`/`article` из PostgreSQL для поиска |
 
-### B.4. `parts`
+### B.4. `diagnostic_reports`
 
-| Поле | Тип | Описание |
-|---|---|---|
-| `_id` | ObjectID | Идентификатор |
-| `name` | string | Название |
-| `price` | number | Цена |
-| `stock` | int | Остаток (в README; в коде не заполняется) |
+| Поле | Тип | Обяз. | Индекс / правило | Описание |
+|---|---|:-:|---|---|
+| `_id` | ObjectID | да | PK | Идентификатор протокола |
+| `pg_request_id` | long | да | `> 0`; UNIQUE вместе с `revision` | Ссылка на `request.id` |
+| `pg_diagnosis_id` | long | да | `> 0` | Ссылка на `diagnosis.id` |
+| `revision` | long | да | `> 0`; при `revision > 1` обязателен `kind = "recheck"` | Номер ревизии |
+| `kind` | string | да | `minLength: 1` | `initial` / `recheck` |
+| `checks` | array<{name: string, passed: bool}> | да | каждый элемент: `name` непустой, `passed` bool | Чек-лист проверок |
+| `found_faults` | array | да | — | Найденные неисправности |
+| `attachments` | array | да | — | Вложения (фото, PDF, …) |
 
-### B.5. Подходы к моделированию
+Индекс: UNIQUE `(pg_request_id, revision)`.
+
+### B.5. `request_events`
+
+| Поле | Тип | Обяз. | Индекс / правило | Описание |
+|---|---|:-:|---|---|
+| `_id` | ObjectID | да | PK | Идентификатор события |
+| `pg_request_id` | long | да | `> 0`; индекс `(pg_request_id, created_at DESC)` | Ссылка на `request.id` |
+| `type` | string | да | `minLength: 1` | Тип события (`comment_added`, `status_changed`, …) |
+| `created_at` | date | да | — | Время события |
+| `author` | object | да | `required: pg_employee_id`; `pg_employee_id > 0` | Автор (без ПДн) |
+| `payload` | object | да | — | Детали события, зависят от `type` |
+| `pg_status_history_id` | long | условно | UNIQUE SPARSE, `> 0`; обязателен при `type = "status_changed"` | Ссылка на `status_history.id` |
+
+Дополнительное правило для `status_changed`: `payload.old_status` и `payload.new_status` — непустые строки. События `status_changed` создаются **только** через `UpsertStatusChanged` (upsert по `pg_status_history_id`); `Update`/`Delete` для `request_events` запрещены — коллекция append-only.
+
+### B.6. Подходы к моделированию (по README)
 
 | Подход | Где применён | Обоснование |
 |---|---|---|
-| Embedding | `requests.equipment` | Читается вместе с заявкой, редко обновляется независимо |
-| Referencing | `requests.client_id`, `requests.parts[].part_id` | 1:N и M:N, избегаем дублирования |
+| Embedding | `diagnostic_reports.checks`, `equipment_models.common_faults` | Читаются и пишутся вместе с родительским документом, 5–30 коротких записей |
+| Referencing | `parts_catalog.pg_part_id`, `diagnostic_reports.pg_*`, `request_events.pg_*` | Связь с PostgreSQL и M:N через `compatible_model_ids` |
+
+### B.7. Правила согласованности PostgreSQL ↔ MongoDB
+
+1. Нет внешних ключей между СУБД; ссылки — `pg_*` (int64). Приложение проверяет существование при вставке, периодическая сверка ищет «сирот».
+2. Порядок записи: сначала PostgreSQL, затем MongoDB. Проекции идемпотентны (UNIQUE `pg_status_history_id` + `upsert`).
+3. Деньги, остатки и статусы не хранятся в MongoDB.
+4. Копии данных из PostgreSQL лежат в `pg_snapshot` с отметкой `synced_at`.
+5. Недоступность MongoDB не останавливает бизнес-процесс.
+6. ПДн клиента в MongoDB не хранятся; в событиях только `pg_employee_id`.
+7. Бэкапы независимы; после восстановления PostgreSQL проекции `status_changed` пересобираются из `status_history`.
 
 ---
 
-## Замечания к согласованности
+## Замечания к согласованности (исправить до сдачи)
 
-1. **MongoDB:** согласовать имя коллекции заявок — `requests` в коде или `service_requests` в README.
-2. **MongoDB:** поля `email`, `stock`, `repair`, `created_at`/`date` описаны в README, но не создаются в `main.go`. Либо добавить в код, либо убрать из README.
-3. **PostgreSQL:** в `migrations/README.md` версия после `make up` указана как `2`, фактически после миграции 005 — `5`; в структуре отсутствуют файлы 003–005.
-4. **`audit_log`:** права выдаются в `security/01_roles.sql` (в `DO`-блоке с проверкой существования таблицы), поэтому порядок: `01_roles.sql` → `make up` → при необходимости повторно `01_roles.sql`.
-
-
+1. **`infra/postgres-replication/primary/init/02-apply-project-migrations.sh`** перечисляет только 001–004. Миграция `005_add_audit.up.sql` не применяется в HA-кластере → `audit_log` не создаётся. Добавить пятую миграцию в список или заменить цикл на `for` по `*.up.sql` с сортировкой.
+2. **`migrations/README.md`** утверждает, что после `make up` версия `2`, а в структуре нет 003–005. Обновить до версии `5` и добавить файлы 003, 004, 005.
+3. **`README.md` (корневой)** для `part.article` указывает `UNIQUE`, а миграция 001 — просто `VARCHAR(100)` без уникальности. Либо добавить UNIQUE в миграцию, либо убрать из README.
+4. **`README.md` (корневой)** в таблице `client`/`employee`/`request` пишет `BIGSERIAL`, а миграция 001 — `GENERATED ALWAYS AS IDENTITY`. Привести к фактическому типу (IDENTITY) или указать «суррогатный PK».
+5. **`README.md` (корневой)** в `diagnosis` не упоминает `UNIQUE(request_id)`, хотя в миграции 001 он есть. Добавить ограничение в словарь.
+6. **`README.md` (корневой)** в `master_assignment` не упоминает частичный уникальный индекс «один активный на заявку». Добавить.
+7. **`README.md` (корневой)** в `part_reservation` не упоминает триггер `trg_check_part_reservation_stock`. Добавить.
+8. **`infra/postgres-replication/README.md`** и `EXPERIMENT-LOG-TEMPLATE.md` пишут про «14 таблиц в `public`». С миграцией 005 (`audit_log`) их 15. Обновить ожидаемое число в `sql/06-project-schema-check.sql` и в логе эксперимента.
+9. **`security/01_roles.sql`** в текущем виде не содержит `GRANT ON audit_log` (правка из предыдущего обсуждения не применена). Если `01_roles.sql` запускается до миграции 005 — `GRANT` упадёт. Обернуть в `DO`-блок с проверкой `pg_class` или положиться на `ALTER DEFAULT PRIVILEGES` (он уже есть).
+10. **`service_migrator CREATEDB`** в `01_roles.sql` — лишняя привилегия; в `security/README.md` это отмечено, но не убрано. Заменить на `NOCREATEDB` и обновить `Makefile` (создание БД под `ADMIN_USER`, а не под `service_migrator`).
+11. **`mongo_db/Readme.md`** ссылается на `../README.md#распределение-данных-между-postgresql-и-mongodb` — раздел в корневом README есть, ок. Но `main.go` создаёт коллекции в БД `service_center`, а демо — во временной `service_center_demo_<id>`; README упоминает только `service_center`. Уточнить.
+12. **`mongo_db/main.go`**: `validate` для `equipment_models` сравнивает `d["model_key"]` (interface{}) с `string` через `!=`. Если `model_key` придёт как `bson.M`/`primitive`, сравнение даст `true` и вернёт ошибку — это ожидаемо, но лучше явно приводить тип (`s, ok := d["model_key"].(string)`).
+13. **`infra/postgres-replication/scripts/backup.sh`** требует запущенный `pg2`, хотя бэкап идёт через HAProxy. Во время failover-эксперимента (когда `pg2` остановлен) бэкап упадёт. Проверять `haproxy` и хотя бы один из `pg1`/`pg2`.
+14. **`runbook.md`** описывает нативный PostgreSQL 16 (`pg_ctlcluster`, порты 5432/5433), а `README.md` — Docker/Patroni/HAProxy (порт 55432). Это два разных стенда в одной папке; стоит явно разделить или перенести `runbook.md` в `infra/postgres-replication/native/`.
+15. **`replica/replica-entrypoint.sh`** не используется в `compose.yaml` (там только `pg1`/`pg2` под Patroni). Артефакт нативного стенда — пометить или убрать.
 
 Это нужно?
