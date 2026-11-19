@@ -31,6 +31,12 @@ func main() {
 	if err = client.Ping(ctx, nil); err != nil {
 		log.Fatal(err)
 	}
+	if len(os.Args) == 2 && os.Args[1] == "benchmark" {
+		if err = benchmark(client, os.Stdout); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	if len(os.Args) == 2 && os.Args[1] == "demo" {
 		db := client.Database("service_center_demo_" + primitive.NewObjectID().Hex())
 		defer db.Drop(context.Background())
@@ -40,7 +46,7 @@ func main() {
 		return
 	}
 	if len(os.Args) > 1 {
-		log.Fatal("usage: go run . [demo]")
+		log.Fatal("usage: go run . [demo|benchmark]")
 	}
 	if err = createIndexes(ctx, client.Database("service_center")); err != nil {
 		log.Fatal(err)
@@ -49,6 +55,13 @@ func main() {
 }
 
 func createIndexes(ctx context.Context, db *mongo.Database) error {
+	if err := createBaselineIndexes(ctx, db); err != nil {
+		return err
+	}
+	return createPerformanceIndexes(ctx, db)
+}
+
+func createBaselineIndexes(ctx context.Context, db *mongo.Database) error {
 	indexes := map[string][]mongo.IndexModel{
 		"equipment_models": {{Keys: bson.D{{Key: "model_key", Value: 1}}, Options: options.Index().SetUnique(true)}},
 		"parts_catalog": {
