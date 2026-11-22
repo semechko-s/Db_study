@@ -37,6 +37,14 @@ func main() {
 		}
 		return
 	}
+
+	if len(os.Args) == 2 && os.Args[1] == "transaction" {
+		if err = transactionDemo(ctx, client); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
 	if len(os.Args) == 2 && os.Args[1] == "benchmark" {
 		if err = benchmark(client, os.Stdout); err != nil {
 			log.Fatal(err)
@@ -52,7 +60,7 @@ func main() {
 		return
 	}
 	if len(os.Args) > 1 {
-		log.Fatal("usage: go run . [demo|benchmark|bulk]")
+		log.Fatal("usage: go run . [demo|benchmark|bulkk|transaction]")
 	}
 	if err = createIndexes(ctx, client.Database("service_center")); err != nil {
 		log.Fatal(err)

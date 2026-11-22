@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"time"
@@ -12,8 +13,10 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// bulkDemo models a parts catalog synchronization. It uses an isolated database
-// so the example never modifies the team's service_center database.
+// bulkDemo demonstrates unordered synchronization of independent parts.
+// The duplicate-key operation is intentional: it proves that MongoDB continues
+// processing the remaining operations and that the caller handles partial errors.
+// The demo uses an isolated database and never modifies service_center.
 func bulkDemo(client *mongo.Client, out io.Writer) (err error) {
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
@@ -38,22 +41,49 @@ func bulkDemo(client *mongo.Client, out io.Writer) (err error) {
 			"pg_snapshot":          bson.M{"name": name, "article": article, "synced_at": now},
 		}
 	}
-	// Seed an existing part to make the update operation observable.
+
+	// Existing document is the target of UpdateOne and the duplicate-key test.
 	if _, err := col.InsertOne(ctx, part(1001, "Экран", "SCR-1001", "display")); err != nil {
 		return err
 	}
+
 	operations := []mongo.WriteModel{
 		mongo.NewInsertOneModel().SetDocument(part(1002, "Аккумулятор", "BAT-1002", "battery")),
-		mongo.NewInsertOneModel().SetDocument(part(1003, "Разъём", "USB-1003", "connector")),
+		// This insert must fail because pg_part_id=1001 already exists.
+		mongo.NewInsertOneModel().SetDocument(part(1001, "Дубликат", "DUP-1001", "display")),
 		mongo.NewUpdateOneModel().SetFilter(bson.M{"pg_part_id": int64(1001)}).
 			SetUpdate(bson.M{"$inc": bson.M{"attributes.stock_quantity": 7}}),
+		mongo.NewInsertOneModel().SetDocument(part(1003, "Разъём", "USB-1003", "connector")),
 	}
-	// Ordered execution is predictable for a teaching demo; error handling is
-	// delegated to the teammate responsible for partial-failure scenarios.
-	result, err := col.BulkWrite(ctx, operations, options.BulkWrite().SetOrdered(true))
-	if err != nil {
-		return fmt.Errorf("bulk write failed: %w", err)
+
+	// Unordered is appropriate because catalog synchronization operations are
+	// independent: one bad part must not prevent valid parts from being synced.
+	result, bulkErr := col.BulkWrite(ctx, operations, options.BulkWrite().SetOrdered(false))
+	if bulkErr == nil {
+		return fmt.Errorf("expected duplicate-key error was not returned")
 	}
+
+	var writeErr mongo.BulkWriteException
+
+	if !errors.As(bulkErr, &writeErr) {
+		var writeErrPtr *mongo.BulkWriteException
+		if !errors.As(bulkErr, &writeErrPtr) || writeErrPtr == nil {
+			return fmt.Errorf("bulk write failed for a reason other than a partial write error: %w", bulkErr)
+		}
+		writeErr = *writeErrPtr
+	}
+
+	if writeErr.WriteConcernError != nil {
+		return fmt.Errorf("bulk write concern error: %w", writeErr.WriteConcernError)
+	}
+	if len(writeErr.WriteErrors) != 1 {
+		return fmt.Errorf("expected one failed operation, got %d: %w", len(writeErr.WriteErrors), bulkErr)
+	}
+	failed := writeErr.WriteErrors[0]
+	if failed.Index != 1 || failed.Code != 11000 {
+		return fmt.Errorf("unexpected bulk write error at operation %d (code %d): %s", failed.Index, failed.Code, failed.Message)
+	}
+
 	count, err := col.CountDocuments(ctx, bson.M{})
 	if err != nil {
 		return err
@@ -67,8 +97,13 @@ func bulkDemo(client *mongo.Client, out io.Writer) (err error) {
 		return err
 	}
 	if result.InsertedCount != 2 || result.ModifiedCount != 1 || count != 3 || updated.Attributes.StockQuantity != 12 {
-		return fmt.Errorf("unexpected bulk results: inserted=%d modified=%d total=%d stock=%d", result.InsertedCount, result.ModifiedCount, count, updated.Attributes.StockQuantity)
+		return fmt.Errorf("unexpected partial bulk results: inserted=%d modified=%d total=%d stock=%d", result.InsertedCount, result.ModifiedCount, count, updated.Attributes.StockQuantity)
 	}
-	_, err = fmt.Fprintf(out, "BulkWrite OK: inserted=%d matched=%d modified=%d total=%d updated_stock=%d\n", result.InsertedCount, result.MatchedCount, result.ModifiedCount, count, updated.Attributes.StockQuantity)
+
+	_, err = fmt.Fprintf(out,
+		"Unordered BulkWrite handled partial failure: inserted=%d matched=%d modified=%d total=%d updated_stock=%d\n"+
+			"Expected error: operation=%d code=%d message=%q\n",
+		result.InsertedCount, result.MatchedCount, result.ModifiedCount, count,
+		updated.Attributes.StockQuantity, failed.Index, failed.Code, failed.Message)
 	return err
 }
