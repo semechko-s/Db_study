@@ -45,6 +45,13 @@ func main() {
 		return
 	}
 
+	if len(os.Args) == 2 && os.Args[1] == "index-write" {
+		if err = indexWriteBenchmark(client, os.Stdout); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
+
 	if len(os.Args) == 2 && os.Args[1] == "benchmark" {
 		if err = benchmark(client, os.Stdout); err != nil {
 			log.Fatal(err)
@@ -60,7 +67,7 @@ func main() {
 		return
 	}
 	if len(os.Args) > 1 {
-		log.Fatal("usage: go run . [demo|benchmark|bulkk|transaction]")
+		log.Fatal("usage: go run . [demo|benchmark|bulk|transaction|index-write]")
 	}
 	if err = createIndexes(ctx, client.Database("service_center")); err != nil {
 		log.Fatal(err)

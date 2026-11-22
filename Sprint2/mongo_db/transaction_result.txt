@@ -1,0 +1,8 @@
+SUCCESS: diagnostic report and event committed
+BEFORE: reports=0 events=0
+INSIDE TRANSACTION: reports=1
+EXPECTED ERROR: document validation failed, code=121
+AFTER ROLLBACK: reports=0 events=0
+PASS: partial result is absent
+ROLLBACK: transaction aborted after validation error: write exception: write errors: [Document failed validation: {"failingDocumentId": {"$oid":"6b02cd2bf364d8be925ecabe"},"details": {"operatorName": "$and","clausesNotSatisfied": [{"index": {"$numberInt":"0"},"details": {"operatorName": "$jsonSchema","schemaRulesNotSatisfied": [{"operatorName": "required","specifiedAs": {"required": ["pg_request_id","type","created_at","author","payload"]},"missingProperties": ["author"]}]}}]}}]
+RETRY: transaction callback executed 2 times; both documents committed

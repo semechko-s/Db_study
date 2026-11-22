@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"time"
 
@@ -45,10 +46,25 @@ func transactionDemo(ctx context.Context, client *mongo.Client) error {
 	// Сценарий 2. Вторая операция нарушает валидатор.
 	// Первая операция должна быть отменена вместе со всей транзакцией.
 	rollbackID := baseID + 10
+	if err := checkPair(ctx, reports, events, rollbackID, 0); err != nil {
+		return fmt.Errorf("rollback initial state: %w", err)
+	}
+	fmt.Println("BEFORE: reports=0 events=0")
+	firstWriteVerified := false
 	rollbackErr := runTransaction(ctx, client, func(sc mongo.SessionContext) (interface{}, error) {
 		if _, err := reports.InsertOne(sc, makeReport(rollbackID, rollbackID+1)); err != nil {
 			return nil, err
 		}
+		// Собственная первая запись уже видна внутри той же транзакции.
+		count, err := reports.CountDocuments(sc, bson.M{"pg_request_id": rollbackID})
+		if err != nil {
+			return nil, err
+		}
+		if count != 1 {
+			return nil, fmt.Errorf("first write not visible: reports=%d", count)
+		}
+		firstWriteVerified = true
+		fmt.Println("INSIDE TRANSACTION: reports=1")
 
 		invalidEvent := bson.M{
 			"pg_request_id": rollbackID,
@@ -60,16 +76,26 @@ func transactionDemo(ctx context.Context, client *mongo.Client) error {
 				"revision":        int64(1),
 			},
 		}
-		_, err := events.InsertOne(sc, invalidEvent)
+		_, err = events.InsertOne(sc, invalidEvent)
 		return nil, err
 	})
 	if rollbackErr == nil {
 		return fmt.Errorf("rollback scenario: expected validation error, got nil")
 	}
 
+	if !firstWriteVerified {
+		return fmt.Errorf("rollback scenario: first write was not verified")
+	}
+	var writeErr mongo.WriteException
+	if !errors.As(rollbackErr, &writeErr) || !writeErr.HasErrorCode(121) {
+		return fmt.Errorf("expected document validation error 121: %w", rollbackErr)
+	}
+	fmt.Println("EXPECTED ERROR: document validation failed, code=121")
 	if err := checkPair(ctx, reports, events, rollbackID, 0); err != nil {
 		return fmt.Errorf("rollback verification: %w", err)
 	}
+	fmt.Println("AFTER ROLLBACK: reports=0 events=0")
+	fmt.Println("PASS: partial result is absent")
 	fmt.Printf("ROLLBACK: transaction aborted after validation error: %v\n", rollbackErr)
 
 	// Сценарий 3. Искусственно моделируем временную ошибку.
