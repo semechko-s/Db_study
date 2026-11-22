@@ -1,0 +1,27 @@
+name: db-study-mongo-replication
+
+x-mongo: &mongo
+  image: mongo:8.0
+  network_mode: host
+
+services:
+  mongo1:
+    <<: *mongo
+    command: ["mongod", "--replSet", "rs0", "--bind_ip", "localhost", "--port", "27117"]
+    volumes:
+      - mongo1-data:/data/db
+  mongo2:
+    <<: *mongo
+    command: ["mongod", "--replSet", "rs0", "--bind_ip", "localhost", "--port", "27118"]
+    volumes:
+      - mongo2-data:/data/db
+  mongo3:
+    <<: *mongo
+    command: ["mongod", "--replSet", "rs0", "--bind_ip", "localhost", "--port", "27119"]
+    volumes:
+      - mongo3-data:/data/db
+
+volumes:
+  mongo1-data:
+  mongo2-data:
+  mongo3-data:
