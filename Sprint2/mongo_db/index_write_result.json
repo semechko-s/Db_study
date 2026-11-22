@@ -1,0 +1,119 @@
+{
+  "documentsPerRun": 20000,
+  "runs": [
+    {
+      "withExtraIndex": false,
+      "run": 1,
+      "insertMillis": 221.88766600000002,
+      "documentsPerSecond": 90135.69956610387,
+      "count": 20000,
+      "size": 3580000,
+      "storageSize": 704512,
+      "totalIndexSize": 1191936,
+      "nindexes": 3
+    },
+    {
+      "withExtraIndex": true,
+      "run": 1,
+      "insertMillis": 256.91249999999997,
+      "documentsPerSecond": 77847.51617768696,
+      "count": 20000,
+      "size": 3580000,
+      "storageSize": 704512,
+      "totalIndexSize": 1794048,
+      "nindexes": 4
+    },
+    {
+      "withExtraIndex": true,
+      "run": 2,
+      "insertMillis": 251.97691700000001,
+      "documentsPerSecond": 79372.34980932796,
+      "count": 20000,
+      "size": 3580000,
+      "storageSize": 704512,
+      "totalIndexSize": 1794048,
+      "nindexes": 4
+    },
+    {
+      "withExtraIndex": false,
+      "run": 2,
+      "insertMillis": 225.969375,
+      "documentsPerSecond": 88507.56878006145,
+      "count": 20000,
+      "size": 3580000,
+      "storageSize": 704512,
+      "totalIndexSize": 1191936,
+      "nindexes": 3
+    },
+    {
+      "withExtraIndex": false,
+      "run": 3,
+      "insertMillis": 228.808041,
+      "documentsPerSecond": 87409.51547240422,
+      "count": 20000,
+      "size": 3580000,
+      "storageSize": 704512,
+      "totalIndexSize": 1191936,
+      "nindexes": 3
+    },
+    {
+      "withExtraIndex": true,
+      "run": 3,
+      "insertMillis": 271.986125,
+      "documentsPerSecond": 73533.16276703452,
+      "count": 20000,
+      "size": 3580000,
+      "storageSize": 704512,
+      "totalIndexSize": 1794048,
+      "nindexes": 4
+    },
+    {
+      "withExtraIndex": true,
+      "run": 4,
+      "insertMillis": 294.86400000000003,
+      "documentsPerSecond": 67827.8799717836,
+      "count": 20000,
+      "size": 3580000,
+      "storageSize": 704512,
+      "totalIndexSize": 1794048,
+      "nindexes": 4
+    },
+    {
+      "withExtraIndex": false,
+      "run": 4,
+      "insertMillis": 219.04387499999999,
+      "documentsPerSecond": 91305.90846240279,
+      "count": 20000,
+      "size": 3580000,
+      "storageSize": 704512,
+      "totalIndexSize": 1191936,
+      "nindexes": 3
+    },
+    {
+      "withExtraIndex": false,
+      "run": 5,
+      "insertMillis": 220.311834,
+      "documentsPerSecond": 90780.41627123852,
+      "count": 20000,
+      "size": 3580000,
+      "storageSize": 704512,
+      "totalIndexSize": 1191936,
+      "nindexes": 3
+    },
+    {
+      "withExtraIndex": true,
+      "run": 5,
+      "insertMillis": 256.369417,
+      "documentsPerSecond": 78012.4253276279,
+      "count": 20000,
+      "size": 3580000,
+      "storageSize": 704512,
+      "totalIndexSize": 1794048,
+      "nindexes": 4
+    }
+  ],
+  "medianInsertMillis": {
+    "baseline": 221.88766600000002,
+    "extraIndex": 256.91249999999997
+  }
+}

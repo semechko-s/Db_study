@@ -30,7 +30,7 @@
 Из `Sprint2/mongo_db` с заданным `MONGODB_URI` тестового сервера:
 
 ```bash
-go run . index-write
+go run . index-write > index_write_result.json
 ```
 
 Код — `index_write.go`.

@@ -36,10 +36,55 @@ INSIDE TRANSACTION доказывает, что первая операция в
 
 ## Запуск
 
-Из Sprint2/mongo_db при установленном MONGODB_URI выполнить:
+Эксперимент проверен на MongoDB 9.0.4. Используется отдельный локальный Replica Set из одного узла.
+
+Проверить версию:
 
 ```bash
-go run . transaction
+mongod --version
 ```
 
-Для выполнения транзакций нужен запущенный Replica Set. Команды развёртывания отдельного локального узла приведены в INSTALL.md.
+В первом терминале запустить сервер:
+
+```bash
+mongo_test_dir=$(mktemp -d /tmp/sprint6-mongo.XXXXXX)
+mongod --dbpath "$mongo_test_dir" --replSet rsTest --bind_ip 127.0.0.1 --port 37223 --logpath "$mongo_test_dir/server.log"
+```
+
+Оставить первый терминал открытым. Во втором инициализировать Replica Set:
+
+```bash
+mongosh 'mongodb://127.0.0.1:37223/?directConnection=true' --quiet --eval '
+rs.initiate({_id:"rsTest",members:[{_id:0,host:"127.0.0.1:37223"}]});
+for(let i=0;i<60;i++){
+  if(db.hello().isWritablePrimary){print("PRIMARY готов");quit(0);}
+  sleep(500);
+}
+throw new Error("PRIMARY не появился за 30 секунд");
+'
+```
+
+После сообщения `PRIMARY готов` перейти в папку проекта и настроить подключение:
+
+```bash
+cd /Users/ann/proga/Db_study/Sprint2/mongo_db
+export MONGODB_URI='mongodb://127.0.0.1:37223/?replicaSet=rsTest&readConcernLevel=majority&w=majority&readPreference=primary'
+```
+
+Запустить проверку и сохранить вывод:
+
+```bash
+(
+  set -e
+  set -o pipefail
+  go run . transaction 2>&1 | tee transaction_result.txt
+)
+```
+
+Ожидаются ошибка валидации `121`, сообщение `AFTER ROLLBACK: reports=0 events=0` и `PASS: partial result is absent`.
+
+После проверки остановить сервер через `Ctrl+C` в первом терминале. Во втором выполнить:
+
+```bash
+unset MONGODB_URI
+```
