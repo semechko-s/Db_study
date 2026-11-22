@@ -86,13 +86,15 @@ func seedBenchmark(ctx context.Context, db *mongo.Database) error {
 }
 
 type benchmarkMeasurement struct {
-	MedianMillis int64             `json:"medianExecutionTimeMillis"`
-	Explains     []json.RawMessage `json:"explains"`
+	MedianMillis       int64             `json:"medianExecutionTimeMillis"`
+	MedianClientTimeMs float64           `json:"medianClientTimeMs"`
+	Explains           []json.RawMessage `json:"explains"`
 }
 
 func (q performanceQuery) measure(ctx context.Context, db *mongo.Database) (benchmarkMeasurement, error) {
 	var result benchmarkMeasurement
 	var millis []int64
+	var clientTimes []float64
 	command := bson.D{
 		{Key: "explain", Value: bson.D{
 			{Key: "find", Value: q.collection},
@@ -103,13 +105,16 @@ func (q performanceQuery) measure(ctx context.Context, db *mongo.Database) (benc
 	}
 	// Execute once before recording measurements to warm up the query's data.
 	for run := 0; run <= benchmarkRuns; run++ {
+		start := time.Now()
 		raw, err := db.RunCommand(ctx, command).Raw()
+		elapsed := time.Since(start).Seconds() * 1000
 		if err != nil {
 			return result, err
 		}
 		if run == 0 {
 			continue
 		}
+		clientTimes = append(clientTimes, elapsed)
 		var stats struct {
 			ExecutionStats struct {
 				Millis int64 `bson:"executionTimeMillis"`
@@ -127,6 +132,8 @@ func (q performanceQuery) measure(ctx context.Context, db *mongo.Database) (benc
 	}
 	sort.Slice(millis, func(i, j int) bool { return millis[i] < millis[j] })
 	result.MedianMillis = millis[len(millis)/2]
+	sort.Float64s(clientTimes)
+	result.MedianClientTimeMs = clientTimes[len(clientTimes)/2]
 	return result, nil
 }
 

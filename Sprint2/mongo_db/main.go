@@ -31,6 +31,12 @@ func main() {
 	if err = client.Ping(ctx, nil); err != nil {
 		log.Fatal(err)
 	}
+	if len(os.Args) == 2 && os.Args[1] == "bulk" {
+		if err = bulkDemo(client, os.Stdout); err != nil {
+			log.Fatal(err)
+		}
+		return
+	}
 	if len(os.Args) == 2 && os.Args[1] == "benchmark" {
 		if err = benchmark(client, os.Stdout); err != nil {
 			log.Fatal(err)
@@ -46,7 +52,7 @@ func main() {
 		return
 	}
 	if len(os.Args) > 1 {
-		log.Fatal("usage: go run . [demo|benchmark]")
+		log.Fatal("usage: go run . [demo|benchmark|bulk]")
 	}
 	if err = createIndexes(ctx, client.Database("service_center")); err != nil {
 		log.Fatal(err)

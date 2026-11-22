@@ -1,0 +1,2505 @@
+{
+  "documentsPerCollection": 120000,
+  "queries": [
+    {
+      "collection": "request_events",
+      "before": {
+        "medianExecutionTimeMillis": 43,
+        "medianClientTimeMs": 44.110373,
+        "explains": [
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.request_events",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "author.pg_employee_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "58008D6C",
+              "planCacheKey": "58008D6C",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "SORT",
+                "sortPattern": {
+                  "created_at": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "author.pg_employee_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "direction": "forward"
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 120,
+              "executionTimeMillis": 43,
+              "totalKeysExamined": 0,
+              "totalDocsExamined": 120000,
+              "executionStages": {
+                "stage": "SORT",
+                "nReturned": 120,
+                "executionTimeMillisEstimate": 2,
+                "works": 120122,
+                "advanced": 120,
+                "needTime": 120001,
+                "needYield": 0,
+                "saveState": 120,
+                "restoreState": 120,
+                "isEOF": 1,
+                "sortPattern": {
+                  "created_at": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "totalDataSizeSorted": 25800,
+                "usedDisk": false,
+                "spills": 0,
+                "spilledDataStorageSize": 0,
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "author.pg_employee_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "nReturned": 120,
+                  "executionTimeMillisEstimate": 2,
+                  "works": 120001,
+                  "advanced": 120,
+                  "needTime": 119880,
+                  "needYield": 0,
+                  "saveState": 120,
+                  "restoreState": 120,
+                  "isEOF": 1,
+                  "direction": "forward",
+                  "docsExamined": 120000
+                }
+              }
+            },
+            "command": {
+              "find": "request_events",
+              "filter": {
+                "author.pg_employee_id": 42
+              },
+              "sort": {
+                "created_at": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          },
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.request_events",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "author.pg_employee_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "58008D6C",
+              "planCacheKey": "58008D6C",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "SORT",
+                "sortPattern": {
+                  "created_at": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "author.pg_employee_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "direction": "forward"
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 120,
+              "executionTimeMillis": 43,
+              "totalKeysExamined": 0,
+              "totalDocsExamined": 120000,
+              "executionStages": {
+                "stage": "SORT",
+                "nReturned": 120,
+                "executionTimeMillisEstimate": 5,
+                "works": 120122,
+                "advanced": 120,
+                "needTime": 120001,
+                "needYield": 0,
+                "saveState": 120,
+                "restoreState": 120,
+                "isEOF": 1,
+                "sortPattern": {
+                  "created_at": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "totalDataSizeSorted": 25800,
+                "usedDisk": false,
+                "spills": 0,
+                "spilledDataStorageSize": 0,
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "author.pg_employee_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "nReturned": 120,
+                  "executionTimeMillisEstimate": 5,
+                  "works": 120001,
+                  "advanced": 120,
+                  "needTime": 119880,
+                  "needYield": 0,
+                  "saveState": 120,
+                  "restoreState": 120,
+                  "isEOF": 1,
+                  "direction": "forward",
+                  "docsExamined": 120000
+                }
+              }
+            },
+            "command": {
+              "find": "request_events",
+              "filter": {
+                "author.pg_employee_id": 42
+              },
+              "sort": {
+                "created_at": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          },
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.request_events",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "author.pg_employee_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "58008D6C",
+              "planCacheKey": "58008D6C",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "SORT",
+                "sortPattern": {
+                  "created_at": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "author.pg_employee_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "direction": "forward"
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 120,
+              "executionTimeMillis": 43,
+              "totalKeysExamined": 0,
+              "totalDocsExamined": 120000,
+              "executionStages": {
+                "stage": "SORT",
+                "nReturned": 120,
+                "executionTimeMillisEstimate": 6,
+                "works": 120122,
+                "advanced": 120,
+                "needTime": 120001,
+                "needYield": 0,
+                "saveState": 120,
+                "restoreState": 120,
+                "isEOF": 1,
+                "sortPattern": {
+                  "created_at": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "totalDataSizeSorted": 25800,
+                "usedDisk": false,
+                "spills": 0,
+                "spilledDataStorageSize": 0,
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "author.pg_employee_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "nReturned": 120,
+                  "executionTimeMillisEstimate": 6,
+                  "works": 120001,
+                  "advanced": 120,
+                  "needTime": 119880,
+                  "needYield": 0,
+                  "saveState": 120,
+                  "restoreState": 120,
+                  "isEOF": 1,
+                  "direction": "forward",
+                  "docsExamined": 120000
+                }
+              }
+            },
+            "command": {
+              "find": "request_events",
+              "filter": {
+                "author.pg_employee_id": 42
+              },
+              "sort": {
+                "created_at": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          },
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.request_events",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "author.pg_employee_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "58008D6C",
+              "planCacheKey": "58008D6C",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "SORT",
+                "sortPattern": {
+                  "created_at": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "author.pg_employee_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "direction": "forward"
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 120,
+              "executionTimeMillis": 43,
+              "totalKeysExamined": 0,
+              "totalDocsExamined": 120000,
+              "executionStages": {
+                "stage": "SORT",
+                "nReturned": 120,
+                "executionTimeMillisEstimate": 4,
+                "works": 120122,
+                "advanced": 120,
+                "needTime": 120001,
+                "needYield": 0,
+                "saveState": 120,
+                "restoreState": 120,
+                "isEOF": 1,
+                "sortPattern": {
+                  "created_at": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "totalDataSizeSorted": 25800,
+                "usedDisk": false,
+                "spills": 0,
+                "spilledDataStorageSize": 0,
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "author.pg_employee_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "nReturned": 120,
+                  "executionTimeMillisEstimate": 4,
+                  "works": 120001,
+                  "advanced": 120,
+                  "needTime": 119880,
+                  "needYield": 0,
+                  "saveState": 120,
+                  "restoreState": 120,
+                  "isEOF": 1,
+                  "direction": "forward",
+                  "docsExamined": 120000
+                }
+              }
+            },
+            "command": {
+              "find": "request_events",
+              "filter": {
+                "author.pg_employee_id": 42
+              },
+              "sort": {
+                "created_at": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          },
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.request_events",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "author.pg_employee_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "58008D6C",
+              "planCacheKey": "58008D6C",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "SORT",
+                "sortPattern": {
+                  "created_at": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "author.pg_employee_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "direction": "forward"
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 120,
+              "executionTimeMillis": 43,
+              "totalKeysExamined": 0,
+              "totalDocsExamined": 120000,
+              "executionStages": {
+                "stage": "SORT",
+                "nReturned": 120,
+                "executionTimeMillisEstimate": 0,
+                "works": 120122,
+                "advanced": 120,
+                "needTime": 120001,
+                "needYield": 0,
+                "saveState": 120,
+                "restoreState": 120,
+                "isEOF": 1,
+                "sortPattern": {
+                  "created_at": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "totalDataSizeSorted": 25800,
+                "usedDisk": false,
+                "spills": 0,
+                "spilledDataStorageSize": 0,
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "author.pg_employee_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "nReturned": 120,
+                  "executionTimeMillisEstimate": 0,
+                  "works": 120001,
+                  "advanced": 120,
+                  "needTime": 119880,
+                  "needYield": 0,
+                  "saveState": 120,
+                  "restoreState": 120,
+                  "isEOF": 1,
+                  "direction": "forward",
+                  "docsExamined": 120000
+                }
+              }
+            },
+            "command": {
+              "find": "request_events",
+              "filter": {
+                "author.pg_employee_id": 42
+              },
+              "sort": {
+                "created_at": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          }
+        ]
+      },
+      "after": {
+        "medianExecutionTimeMillis": 0,
+        "medianClientTimeMs": 0.548385,
+        "explains": [
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.request_events",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "author.pg_employee_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "58008D6C",
+              "planCacheKey": "2FBBDF58",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "FETCH",
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "keyPattern": {
+                    "author.pg_employee_id": 1,
+                    "created_at": -1
+                  },
+                  "indexName": "author.pg_employee_id_1_created_at_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "author.pg_employee_id": [],
+                    "created_at": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "author.pg_employee_id": [
+                      "[42, 42]"
+                    ],
+                    "created_at": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  }
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 120,
+              "executionTimeMillis": 0,
+              "totalKeysExamined": 120,
+              "totalDocsExamined": 120,
+              "executionStages": {
+                "stage": "FETCH",
+                "nReturned": 120,
+                "executionTimeMillisEstimate": 0,
+                "works": 121,
+                "advanced": 120,
+                "needTime": 0,
+                "needYield": 0,
+                "saveState": 0,
+                "restoreState": 0,
+                "isEOF": 1,
+                "docsExamined": 120,
+                "alreadyHasObj": 0,
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "nReturned": 120,
+                  "executionTimeMillisEstimate": 0,
+                  "works": 121,
+                  "advanced": 120,
+                  "needTime": 0,
+                  "needYield": 0,
+                  "saveState": 0,
+                  "restoreState": 0,
+                  "isEOF": 1,
+                  "keyPattern": {
+                    "author.pg_employee_id": 1,
+                    "created_at": -1
+                  },
+                  "indexName": "author.pg_employee_id_1_created_at_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "author.pg_employee_id": [],
+                    "created_at": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "author.pg_employee_id": [
+                      "[42, 42]"
+                    ],
+                    "created_at": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  },
+                  "keysExamined": 120,
+                  "seeks": 1,
+                  "dupsTested": 0,
+                  "dupsDropped": 0
+                }
+              }
+            },
+            "command": {
+              "find": "request_events",
+              "filter": {
+                "author.pg_employee_id": 42
+              },
+              "sort": {
+                "created_at": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          },
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.request_events",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "author.pg_employee_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "58008D6C",
+              "planCacheKey": "2FBBDF58",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "FETCH",
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "keyPattern": {
+                    "author.pg_employee_id": 1,
+                    "created_at": -1
+                  },
+                  "indexName": "author.pg_employee_id_1_created_at_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "author.pg_employee_id": [],
+                    "created_at": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "author.pg_employee_id": [
+                      "[42, 42]"
+                    ],
+                    "created_at": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  }
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 120,
+              "executionTimeMillis": 0,
+              "totalKeysExamined": 120,
+              "totalDocsExamined": 120,
+              "executionStages": {
+                "stage": "FETCH",
+                "nReturned": 120,
+                "executionTimeMillisEstimate": 0,
+                "works": 121,
+                "advanced": 120,
+                "needTime": 0,
+                "needYield": 0,
+                "saveState": 0,
+                "restoreState": 0,
+                "isEOF": 1,
+                "docsExamined": 120,
+                "alreadyHasObj": 0,
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "nReturned": 120,
+                  "executionTimeMillisEstimate": 0,
+                  "works": 121,
+                  "advanced": 120,
+                  "needTime": 0,
+                  "needYield": 0,
+                  "saveState": 0,
+                  "restoreState": 0,
+                  "isEOF": 1,
+                  "keyPattern": {
+                    "author.pg_employee_id": 1,
+                    "created_at": -1
+                  },
+                  "indexName": "author.pg_employee_id_1_created_at_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "author.pg_employee_id": [],
+                    "created_at": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "author.pg_employee_id": [
+                      "[42, 42]"
+                    ],
+                    "created_at": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  },
+                  "keysExamined": 120,
+                  "seeks": 1,
+                  "dupsTested": 0,
+                  "dupsDropped": 0
+                }
+              }
+            },
+            "command": {
+              "find": "request_events",
+              "filter": {
+                "author.pg_employee_id": 42
+              },
+              "sort": {
+                "created_at": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          },
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.request_events",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "author.pg_employee_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "58008D6C",
+              "planCacheKey": "2FBBDF58",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "FETCH",
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "keyPattern": {
+                    "author.pg_employee_id": 1,
+                    "created_at": -1
+                  },
+                  "indexName": "author.pg_employee_id_1_created_at_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "author.pg_employee_id": [],
+                    "created_at": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "author.pg_employee_id": [
+                      "[42, 42]"
+                    ],
+                    "created_at": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  }
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 120,
+              "executionTimeMillis": 0,
+              "totalKeysExamined": 120,
+              "totalDocsExamined": 120,
+              "executionStages": {
+                "stage": "FETCH",
+                "nReturned": 120,
+                "executionTimeMillisEstimate": 0,
+                "works": 121,
+                "advanced": 120,
+                "needTime": 0,
+                "needYield": 0,
+                "saveState": 0,
+                "restoreState": 0,
+                "isEOF": 1,
+                "docsExamined": 120,
+                "alreadyHasObj": 0,
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "nReturned": 120,
+                  "executionTimeMillisEstimate": 0,
+                  "works": 121,
+                  "advanced": 120,
+                  "needTime": 0,
+                  "needYield": 0,
+                  "saveState": 0,
+                  "restoreState": 0,
+                  "isEOF": 1,
+                  "keyPattern": {
+                    "author.pg_employee_id": 1,
+                    "created_at": -1
+                  },
+                  "indexName": "author.pg_employee_id_1_created_at_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "author.pg_employee_id": [],
+                    "created_at": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "author.pg_employee_id": [
+                      "[42, 42]"
+                    ],
+                    "created_at": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  },
+                  "keysExamined": 120,
+                  "seeks": 1,
+                  "dupsTested": 0,
+                  "dupsDropped": 0
+                }
+              }
+            },
+            "command": {
+              "find": "request_events",
+              "filter": {
+                "author.pg_employee_id": 42
+              },
+              "sort": {
+                "created_at": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          },
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.request_events",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "author.pg_employee_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "58008D6C",
+              "planCacheKey": "2FBBDF58",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "FETCH",
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "keyPattern": {
+                    "author.pg_employee_id": 1,
+                    "created_at": -1
+                  },
+                  "indexName": "author.pg_employee_id_1_created_at_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "author.pg_employee_id": [],
+                    "created_at": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "author.pg_employee_id": [
+                      "[42, 42]"
+                    ],
+                    "created_at": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  }
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 120,
+              "executionTimeMillis": 0,
+              "totalKeysExamined": 120,
+              "totalDocsExamined": 120,
+              "executionStages": {
+                "stage": "FETCH",
+                "nReturned": 120,
+                "executionTimeMillisEstimate": 0,
+                "works": 121,
+                "advanced": 120,
+                "needTime": 0,
+                "needYield": 0,
+                "saveState": 0,
+                "restoreState": 0,
+                "isEOF": 1,
+                "docsExamined": 120,
+                "alreadyHasObj": 0,
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "nReturned": 120,
+                  "executionTimeMillisEstimate": 0,
+                  "works": 121,
+                  "advanced": 120,
+                  "needTime": 0,
+                  "needYield": 0,
+                  "saveState": 0,
+                  "restoreState": 0,
+                  "isEOF": 1,
+                  "keyPattern": {
+                    "author.pg_employee_id": 1,
+                    "created_at": -1
+                  },
+                  "indexName": "author.pg_employee_id_1_created_at_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "author.pg_employee_id": [],
+                    "created_at": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "author.pg_employee_id": [
+                      "[42, 42]"
+                    ],
+                    "created_at": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  },
+                  "keysExamined": 120,
+                  "seeks": 1,
+                  "dupsTested": 0,
+                  "dupsDropped": 0
+                }
+              }
+            },
+            "command": {
+              "find": "request_events",
+              "filter": {
+                "author.pg_employee_id": 42
+              },
+              "sort": {
+                "created_at": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          },
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.request_events",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "author.pg_employee_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "58008D6C",
+              "planCacheKey": "2FBBDF58",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "FETCH",
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "keyPattern": {
+                    "author.pg_employee_id": 1,
+                    "created_at": -1
+                  },
+                  "indexName": "author.pg_employee_id_1_created_at_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "author.pg_employee_id": [],
+                    "created_at": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "author.pg_employee_id": [
+                      "[42, 42]"
+                    ],
+                    "created_at": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  }
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 120,
+              "executionTimeMillis": 0,
+              "totalKeysExamined": 120,
+              "totalDocsExamined": 120,
+              "executionStages": {
+                "stage": "FETCH",
+                "nReturned": 120,
+                "executionTimeMillisEstimate": 0,
+                "works": 121,
+                "advanced": 120,
+                "needTime": 0,
+                "needYield": 0,
+                "saveState": 0,
+                "restoreState": 0,
+                "isEOF": 1,
+                "docsExamined": 120,
+                "alreadyHasObj": 0,
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "nReturned": 120,
+                  "executionTimeMillisEstimate": 0,
+                  "works": 121,
+                  "advanced": 120,
+                  "needTime": 0,
+                  "needYield": 0,
+                  "saveState": 0,
+                  "restoreState": 0,
+                  "isEOF": 1,
+                  "keyPattern": {
+                    "author.pg_employee_id": 1,
+                    "created_at": -1
+                  },
+                  "indexName": "author.pg_employee_id_1_created_at_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "author.pg_employee_id": [],
+                    "created_at": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "author.pg_employee_id": [
+                      "[42, 42]"
+                    ],
+                    "created_at": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  },
+                  "keysExamined": 120,
+                  "seeks": 1,
+                  "dupsTested": 0,
+                  "dupsDropped": 0
+                }
+              }
+            },
+            "command": {
+              "find": "request_events",
+              "filter": {
+                "author.pg_employee_id": 42
+              },
+              "sort": {
+                "created_at": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          }
+        ]
+      }
+    },
+    {
+      "collection": "diagnostic_reports",
+      "before": {
+        "medianExecutionTimeMillis": 42,
+        "medianClientTimeMs": 42.802293999999996,
+        "explains": [
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.diagnostic_reports",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "pg_diagnosis_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "F00F8EC9",
+              "planCacheKey": "F00F8EC9",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "SORT",
+                "sortPattern": {
+                  "revision": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "pg_diagnosis_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "direction": "forward"
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 12,
+              "executionTimeMillis": 41,
+              "totalKeysExamined": 0,
+              "totalDocsExamined": 120000,
+              "executionStages": {
+                "stage": "SORT",
+                "nReturned": 12,
+                "executionTimeMillisEstimate": 4,
+                "works": 120014,
+                "advanced": 12,
+                "needTime": 120001,
+                "needYield": 0,
+                "saveState": 120,
+                "restoreState": 120,
+                "isEOF": 1,
+                "sortPattern": {
+                  "revision": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "totalDataSizeSorted": 2652,
+                "usedDisk": false,
+                "spills": 0,
+                "spilledDataStorageSize": 0,
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "pg_diagnosis_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "nReturned": 12,
+                  "executionTimeMillisEstimate": 3,
+                  "works": 120001,
+                  "advanced": 12,
+                  "needTime": 119988,
+                  "needYield": 0,
+                  "saveState": 120,
+                  "restoreState": 120,
+                  "isEOF": 1,
+                  "direction": "forward",
+                  "docsExamined": 120000
+                }
+              }
+            },
+            "command": {
+              "find": "diagnostic_reports",
+              "filter": {
+                "pg_diagnosis_id": 42
+              },
+              "sort": {
+                "revision": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          },
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.diagnostic_reports",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "pg_diagnosis_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "F00F8EC9",
+              "planCacheKey": "F00F8EC9",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "SORT",
+                "sortPattern": {
+                  "revision": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "pg_diagnosis_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "direction": "forward"
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 12,
+              "executionTimeMillis": 42,
+              "totalKeysExamined": 0,
+              "totalDocsExamined": 120000,
+              "executionStages": {
+                "stage": "SORT",
+                "nReturned": 12,
+                "executionTimeMillisEstimate": 5,
+                "works": 120014,
+                "advanced": 12,
+                "needTime": 120001,
+                "needYield": 0,
+                "saveState": 120,
+                "restoreState": 120,
+                "isEOF": 1,
+                "sortPattern": {
+                  "revision": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "totalDataSizeSorted": 2652,
+                "usedDisk": false,
+                "spills": 0,
+                "spilledDataStorageSize": 0,
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "pg_diagnosis_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "nReturned": 12,
+                  "executionTimeMillisEstimate": 4,
+                  "works": 120001,
+                  "advanced": 12,
+                  "needTime": 119988,
+                  "needYield": 0,
+                  "saveState": 120,
+                  "restoreState": 120,
+                  "isEOF": 1,
+                  "direction": "forward",
+                  "docsExamined": 120000
+                }
+              }
+            },
+            "command": {
+              "find": "diagnostic_reports",
+              "filter": {
+                "pg_diagnosis_id": 42
+              },
+              "sort": {
+                "revision": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          },
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.diagnostic_reports",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "pg_diagnosis_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "F00F8EC9",
+              "planCacheKey": "F00F8EC9",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "SORT",
+                "sortPattern": {
+                  "revision": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "pg_diagnosis_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "direction": "forward"
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 12,
+              "executionTimeMillis": 43,
+              "totalKeysExamined": 0,
+              "totalDocsExamined": 120000,
+              "executionStages": {
+                "stage": "SORT",
+                "nReturned": 12,
+                "executionTimeMillisEstimate": 3,
+                "works": 120014,
+                "advanced": 12,
+                "needTime": 120001,
+                "needYield": 0,
+                "saveState": 120,
+                "restoreState": 120,
+                "isEOF": 1,
+                "sortPattern": {
+                  "revision": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "totalDataSizeSorted": 2652,
+                "usedDisk": false,
+                "spills": 0,
+                "spilledDataStorageSize": 0,
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "pg_diagnosis_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "nReturned": 12,
+                  "executionTimeMillisEstimate": 2,
+                  "works": 120001,
+                  "advanced": 12,
+                  "needTime": 119988,
+                  "needYield": 0,
+                  "saveState": 120,
+                  "restoreState": 120,
+                  "isEOF": 1,
+                  "direction": "forward",
+                  "docsExamined": 120000
+                }
+              }
+            },
+            "command": {
+              "find": "diagnostic_reports",
+              "filter": {
+                "pg_diagnosis_id": 42
+              },
+              "sort": {
+                "revision": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          },
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.diagnostic_reports",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "pg_diagnosis_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "F00F8EC9",
+              "planCacheKey": "F00F8EC9",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "SORT",
+                "sortPattern": {
+                  "revision": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "pg_diagnosis_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "direction": "forward"
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 12,
+              "executionTimeMillis": 44,
+              "totalKeysExamined": 0,
+              "totalDocsExamined": 120000,
+              "executionStages": {
+                "stage": "SORT",
+                "nReturned": 12,
+                "executionTimeMillisEstimate": 2,
+                "works": 120014,
+                "advanced": 12,
+                "needTime": 120001,
+                "needYield": 0,
+                "saveState": 120,
+                "restoreState": 120,
+                "isEOF": 1,
+                "sortPattern": {
+                  "revision": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "totalDataSizeSorted": 2652,
+                "usedDisk": false,
+                "spills": 0,
+                "spilledDataStorageSize": 0,
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "pg_diagnosis_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "nReturned": 12,
+                  "executionTimeMillisEstimate": 2,
+                  "works": 120001,
+                  "advanced": 12,
+                  "needTime": 119988,
+                  "needYield": 0,
+                  "saveState": 120,
+                  "restoreState": 120,
+                  "isEOF": 1,
+                  "direction": "forward",
+                  "docsExamined": 120000
+                }
+              }
+            },
+            "command": {
+              "find": "diagnostic_reports",
+              "filter": {
+                "pg_diagnosis_id": 42
+              },
+              "sort": {
+                "revision": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          },
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.diagnostic_reports",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "pg_diagnosis_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "F00F8EC9",
+              "planCacheKey": "F00F8EC9",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "SORT",
+                "sortPattern": {
+                  "revision": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "pg_diagnosis_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "direction": "forward"
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 12,
+              "executionTimeMillis": 41,
+              "totalKeysExamined": 0,
+              "totalDocsExamined": 120000,
+              "executionStages": {
+                "stage": "SORT",
+                "nReturned": 12,
+                "executionTimeMillisEstimate": 6,
+                "works": 120014,
+                "advanced": 12,
+                "needTime": 120001,
+                "needYield": 0,
+                "saveState": 120,
+                "restoreState": 120,
+                "isEOF": 1,
+                "sortPattern": {
+                  "revision": -1
+                },
+                "memLimit": 104857600,
+                "type": "simple",
+                "totalDataSizeSorted": 2652,
+                "usedDisk": false,
+                "spills": 0,
+                "spilledDataStorageSize": 0,
+                "inputStage": {
+                  "stage": "COLLSCAN",
+                  "filter": {
+                    "pg_diagnosis_id": {
+                      "$eq": 42
+                    }
+                  },
+                  "nReturned": 12,
+                  "executionTimeMillisEstimate": 6,
+                  "works": 120001,
+                  "advanced": 12,
+                  "needTime": 119988,
+                  "needYield": 0,
+                  "saveState": 120,
+                  "restoreState": 120,
+                  "isEOF": 1,
+                  "direction": "forward",
+                  "docsExamined": 120000
+                }
+              }
+            },
+            "command": {
+              "find": "diagnostic_reports",
+              "filter": {
+                "pg_diagnosis_id": 42
+              },
+              "sort": {
+                "revision": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          }
+        ]
+      },
+      "after": {
+        "medianExecutionTimeMillis": 0,
+        "medianClientTimeMs": 0.366813,
+        "explains": [
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.diagnostic_reports",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "pg_diagnosis_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "F00F8EC9",
+              "planCacheKey": "7133CB5F",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "FETCH",
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "keyPattern": {
+                    "pg_diagnosis_id": 1,
+                    "revision": -1
+                  },
+                  "indexName": "pg_diagnosis_id_1_revision_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "pg_diagnosis_id": [],
+                    "revision": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "pg_diagnosis_id": [
+                      "[42, 42]"
+                    ],
+                    "revision": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  }
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 12,
+              "executionTimeMillis": 0,
+              "totalKeysExamined": 12,
+              "totalDocsExamined": 12,
+              "executionStages": {
+                "stage": "FETCH",
+                "nReturned": 12,
+                "executionTimeMillisEstimate": 0,
+                "works": 13,
+                "advanced": 12,
+                "needTime": 0,
+                "needYield": 0,
+                "saveState": 0,
+                "restoreState": 0,
+                "isEOF": 1,
+                "docsExamined": 12,
+                "alreadyHasObj": 0,
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "nReturned": 12,
+                  "executionTimeMillisEstimate": 0,
+                  "works": 13,
+                  "advanced": 12,
+                  "needTime": 0,
+                  "needYield": 0,
+                  "saveState": 0,
+                  "restoreState": 0,
+                  "isEOF": 1,
+                  "keyPattern": {
+                    "pg_diagnosis_id": 1,
+                    "revision": -1
+                  },
+                  "indexName": "pg_diagnosis_id_1_revision_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "pg_diagnosis_id": [],
+                    "revision": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "pg_diagnosis_id": [
+                      "[42, 42]"
+                    ],
+                    "revision": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  },
+                  "keysExamined": 12,
+                  "seeks": 1,
+                  "dupsTested": 0,
+                  "dupsDropped": 0
+                }
+              }
+            },
+            "command": {
+              "find": "diagnostic_reports",
+              "filter": {
+                "pg_diagnosis_id": 42
+              },
+              "sort": {
+                "revision": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          },
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.diagnostic_reports",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "pg_diagnosis_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "F00F8EC9",
+              "planCacheKey": "7133CB5F",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "FETCH",
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "keyPattern": {
+                    "pg_diagnosis_id": 1,
+                    "revision": -1
+                  },
+                  "indexName": "pg_diagnosis_id_1_revision_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "pg_diagnosis_id": [],
+                    "revision": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "pg_diagnosis_id": [
+                      "[42, 42]"
+                    ],
+                    "revision": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  }
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 12,
+              "executionTimeMillis": 0,
+              "totalKeysExamined": 12,
+              "totalDocsExamined": 12,
+              "executionStages": {
+                "stage": "FETCH",
+                "nReturned": 12,
+                "executionTimeMillisEstimate": 0,
+                "works": 13,
+                "advanced": 12,
+                "needTime": 0,
+                "needYield": 0,
+                "saveState": 0,
+                "restoreState": 0,
+                "isEOF": 1,
+                "docsExamined": 12,
+                "alreadyHasObj": 0,
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "nReturned": 12,
+                  "executionTimeMillisEstimate": 0,
+                  "works": 13,
+                  "advanced": 12,
+                  "needTime": 0,
+                  "needYield": 0,
+                  "saveState": 0,
+                  "restoreState": 0,
+                  "isEOF": 1,
+                  "keyPattern": {
+                    "pg_diagnosis_id": 1,
+                    "revision": -1
+                  },
+                  "indexName": "pg_diagnosis_id_1_revision_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "pg_diagnosis_id": [],
+                    "revision": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "pg_diagnosis_id": [
+                      "[42, 42]"
+                    ],
+                    "revision": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  },
+                  "keysExamined": 12,
+                  "seeks": 1,
+                  "dupsTested": 0,
+                  "dupsDropped": 0
+                }
+              }
+            },
+            "command": {
+              "find": "diagnostic_reports",
+              "filter": {
+                "pg_diagnosis_id": 42
+              },
+              "sort": {
+                "revision": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          },
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.diagnostic_reports",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "pg_diagnosis_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "F00F8EC9",
+              "planCacheKey": "7133CB5F",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "FETCH",
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "keyPattern": {
+                    "pg_diagnosis_id": 1,
+                    "revision": -1
+                  },
+                  "indexName": "pg_diagnosis_id_1_revision_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "pg_diagnosis_id": [],
+                    "revision": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "pg_diagnosis_id": [
+                      "[42, 42]"
+                    ],
+                    "revision": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  }
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 12,
+              "executionTimeMillis": 0,
+              "totalKeysExamined": 12,
+              "totalDocsExamined": 12,
+              "executionStages": {
+                "stage": "FETCH",
+                "nReturned": 12,
+                "executionTimeMillisEstimate": 0,
+                "works": 13,
+                "advanced": 12,
+                "needTime": 0,
+                "needYield": 0,
+                "saveState": 0,
+                "restoreState": 0,
+                "isEOF": 1,
+                "docsExamined": 12,
+                "alreadyHasObj": 0,
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "nReturned": 12,
+                  "executionTimeMillisEstimate": 0,
+                  "works": 13,
+                  "advanced": 12,
+                  "needTime": 0,
+                  "needYield": 0,
+                  "saveState": 0,
+                  "restoreState": 0,
+                  "isEOF": 1,
+                  "keyPattern": {
+                    "pg_diagnosis_id": 1,
+                    "revision": -1
+                  },
+                  "indexName": "pg_diagnosis_id_1_revision_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "pg_diagnosis_id": [],
+                    "revision": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "pg_diagnosis_id": [
+                      "[42, 42]"
+                    ],
+                    "revision": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  },
+                  "keysExamined": 12,
+                  "seeks": 1,
+                  "dupsTested": 0,
+                  "dupsDropped": 0
+                }
+              }
+            },
+            "command": {
+              "find": "diagnostic_reports",
+              "filter": {
+                "pg_diagnosis_id": 42
+              },
+              "sort": {
+                "revision": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          },
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.diagnostic_reports",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "pg_diagnosis_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "F00F8EC9",
+              "planCacheKey": "7133CB5F",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "FETCH",
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "keyPattern": {
+                    "pg_diagnosis_id": 1,
+                    "revision": -1
+                  },
+                  "indexName": "pg_diagnosis_id_1_revision_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "pg_diagnosis_id": [],
+                    "revision": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "pg_diagnosis_id": [
+                      "[42, 42]"
+                    ],
+                    "revision": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  }
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 12,
+              "executionTimeMillis": 0,
+              "totalKeysExamined": 12,
+              "totalDocsExamined": 12,
+              "executionStages": {
+                "stage": "FETCH",
+                "nReturned": 12,
+                "executionTimeMillisEstimate": 0,
+                "works": 13,
+                "advanced": 12,
+                "needTime": 0,
+                "needYield": 0,
+                "saveState": 0,
+                "restoreState": 0,
+                "isEOF": 1,
+                "docsExamined": 12,
+                "alreadyHasObj": 0,
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "nReturned": 12,
+                  "executionTimeMillisEstimate": 0,
+                  "works": 13,
+                  "advanced": 12,
+                  "needTime": 0,
+                  "needYield": 0,
+                  "saveState": 0,
+                  "restoreState": 0,
+                  "isEOF": 1,
+                  "keyPattern": {
+                    "pg_diagnosis_id": 1,
+                    "revision": -1
+                  },
+                  "indexName": "pg_diagnosis_id_1_revision_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "pg_diagnosis_id": [],
+                    "revision": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "pg_diagnosis_id": [
+                      "[42, 42]"
+                    ],
+                    "revision": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  },
+                  "keysExamined": 12,
+                  "seeks": 1,
+                  "dupsTested": 0,
+                  "dupsDropped": 0
+                }
+              }
+            },
+            "command": {
+              "find": "diagnostic_reports",
+              "filter": {
+                "pg_diagnosis_id": 42
+              },
+              "sort": {
+                "revision": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          },
+          {
+            "explainVersion": "1",
+            "queryPlanner": {
+              "namespace": "service_center_benchmark_6b02aee226a6171f5535b3cd.diagnostic_reports",
+              "indexFilterSet": false,
+              "parsedQuery": {
+                "pg_diagnosis_id": {
+                  "$eq": 42
+                }
+              },
+              "queryHash": "F00F8EC9",
+              "planCacheKey": "7133CB5F",
+              "optimizationTimeMillis": 0,
+              "maxIndexedOrSolutionsReached": false,
+              "maxIndexedAndSolutionsReached": false,
+              "maxScansToExplodeReached": false,
+              "winningPlan": {
+                "stage": "FETCH",
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "keyPattern": {
+                    "pg_diagnosis_id": 1,
+                    "revision": -1
+                  },
+                  "indexName": "pg_diagnosis_id_1_revision_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "pg_diagnosis_id": [],
+                    "revision": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "pg_diagnosis_id": [
+                      "[42, 42]"
+                    ],
+                    "revision": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  }
+                }
+              },
+              "rejectedPlans": []
+            },
+            "executionStats": {
+              "executionSuccess": true,
+              "nReturned": 12,
+              "executionTimeMillis": 0,
+              "totalKeysExamined": 12,
+              "totalDocsExamined": 12,
+              "executionStages": {
+                "stage": "FETCH",
+                "nReturned": 12,
+                "executionTimeMillisEstimate": 0,
+                "works": 13,
+                "advanced": 12,
+                "needTime": 0,
+                "needYield": 0,
+                "saveState": 0,
+                "restoreState": 0,
+                "isEOF": 1,
+                "docsExamined": 12,
+                "alreadyHasObj": 0,
+                "inputStage": {
+                  "stage": "IXSCAN",
+                  "nReturned": 12,
+                  "executionTimeMillisEstimate": 0,
+                  "works": 13,
+                  "advanced": 12,
+                  "needTime": 0,
+                  "needYield": 0,
+                  "saveState": 0,
+                  "restoreState": 0,
+                  "isEOF": 1,
+                  "keyPattern": {
+                    "pg_diagnosis_id": 1,
+                    "revision": -1
+                  },
+                  "indexName": "pg_diagnosis_id_1_revision_-1",
+                  "isMultiKey": false,
+                  "multiKeyPaths": {
+                    "pg_diagnosis_id": [],
+                    "revision": []
+                  },
+                  "isUnique": false,
+                  "isSparse": false,
+                  "isPartial": false,
+                  "indexVersion": 2,
+                  "direction": "forward",
+                  "indexBounds": {
+                    "pg_diagnosis_id": [
+                      "[42, 42]"
+                    ],
+                    "revision": [
+                      "[MaxKey, MinKey]"
+                    ]
+                  },
+                  "keysExamined": 12,
+                  "seeks": 1,
+                  "dupsTested": 0,
+                  "dupsDropped": 0
+                }
+              }
+            },
+            "command": {
+              "find": "diagnostic_reports",
+              "filter": {
+                "pg_diagnosis_id": 42
+              },
+              "sort": {
+                "revision": -1
+              },
+              "$db": "service_center_benchmark_6b02aee226a6171f5535b3cd"
+            },
+            "serverInfo": {
+              "host": "43b647c50379",
+              "port": 27017,
+              "version": "7.0.48",
+              "gitVersion": "6937736f0539a5d4c8edb2970255b9369cb385a5"
+            },
+            "serverParameters": {
+              "internalQueryFacetBufferSizeBytes": 104857600,
+              "internalQueryFacetMaxOutputDocSizeBytes": 104857600,
+              "internalLookupStageIntermediateDocumentMaxSizeBytes": 104857600,
+              "internalDocumentSourceGroupMaxMemoryBytes": 104857600,
+              "internalQueryMaxBlockingSortMemoryUsageBytes": 104857600,
+              "internalQueryProhibitBlockingMergeOnMongoS": 0,
+              "internalQueryMaxAddToSetBytes": 104857600,
+              "internalDocumentSourceSetWindowFieldsMaxMemoryBytes": 104857600,
+              "internalQueryFrameworkControl": "forceClassicEngine"
+            },
+            "ok": 1.0
+          }
+        ]
+      }
+    }
+  ]
+}
