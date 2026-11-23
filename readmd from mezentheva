@@ -278,3 +278,105 @@
 | `payload.new_status` | `string` | Для `status_changed` | Новый статус заявки |
 | `pg_status_history_id` | `long` | Для `status_changed` | Уникальная ссылка на `status_history.id` в PostgreSQL, по которой исключаются дубли событий |
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Ordered и unordered bulk-операции
+1. Где выбирается режим
+
+Режим задаётся при вызове BulkWrite / InsertMany через options:
+
+    unordered — mongo_db/bulk.go:
+    go
+
+    result, bulkErr := col.BulkWrite(ctx, operations, options.BulkWrite().SetOrdered(false))
+
+    ordered — mongo_db/index_write.go:
+    go
+
+    if _, err = collection.InsertMany(ctx, docs[offset:end], options.InsertMany().SetOrdered(true)); err != nil {
+        return result, err
+    }
+
+В PostgreSQL-скриптах (scripts/generate_data.py) явного выбора нет: insert_many строит пакетный INSERT ... VALUES (...), (...) RETURNING id, insert_iterable — то же для потока, scripts/lab3.2_for_Mac.sql использует COPY. Порядок строк в RETURNING без ORDER BY не гарантирован.
+2. Поведение при ошибке
+	Ordered	Unordered
+Остановка	на первой ошибке	продолжает все операции
+Применённые операции	до ошибочной	все валидные
+WriteErrors	одна (первая)	массив, у каждой .Index
+Пример в проекте	index_write.go — прерывает замер	bulk.go — проверяет failed.Index == 1, failed.Code == 11000
+
+bulk.go опирается на unordered-семантику: после дубликата pg_part_id=1001 проверяются InsertedCount=2, ModifiedCount=1, stock=12. При ordered эти значения были бы 1, 0, 5.
+3. Частичные результаты
+
+    Unordered позволяет проверить частичный успех: result.InsertedCount, result.ModifiedCount, WriteErrors[].Index.
+
+    Ordered прерывает партию, поэтому в index_write.go проверяется только CountDocuments == len(docs).
+
+    PostgreSQL INSERT ... VALUES атомарен на уровне партии: либо вся партия, либо ничего; частичного успеха внутри одного INSERT нет.
+
+4. Идемпотентность
+
+    Unordered + upsert — правильный паттерн для проекций. В mongo_db/main.go UpsertStatusChanged использует UpdateOne с SetUpsert(true) по уникальному pg_status_history_id; в README.md указано: «Проекции из PostgreSQL идемпотентны … повторная доставка событий безопасна».
+
+    Ordered сам по себе идемпотентности не даёт: повторная доставка упрётся в дубликат и остановит партию. Поэтому ordered применяется в index_write.go, где _id заданы явно (i+1) и дубликатов быть не должно.
+
+    PostgreSQL generate_data.py не идемпотентен: повторный запуск с тем же seed создаёт новые строки (ID сдвигаются через next_id_offset).
+
+5. Производительность
+
+Прямых замеров ordered vs unordered нет, но есть косвенные данные:
+
+    mongo_db/INDEX_WRITE.md: ordered-вставка 20 000 документов партиями по 1000 — медиана 221,89 мс без доп. индекса и 256,91 мс с ним (+15,8%, +588 КиБ индексов).
+
+    mongo_db/benchmark_result.json: после индекса {author.pg_employee_id:1, created_at:-1} запрос по request_events ушёл с COLLSCAN + SORT (43 мс, 120 000 документов) на IXSCAN (0 мс, 120 ключей).
+
+    scripts/lab3.1_report.md: доп. индекс на 1 000 000 строк в PostgreSQL — вставка с 2560,938 до 4581,082 мс (+78,9%), размер с 101 до 110 MB.
+
+    scripts/lab3.2_report.md: COPY 500 000 строк — 248,547 мс против INSERT ... SELECT 814,757 мс (в 3,28 раза быстрее).
+
+Unordered обычно быстрее на смешанных пакетах: не останавливается на первой ошибке, меньше round-trip'ов. Цена — разбор WriteErrors по .Index в вызывающем коде.
+6. Где какой режим уместен
+Место	Режим	Почему
+mongo_db/bulk.go (parts_catalog)	unordered	операции независимы, допустим частичный успех, ошибка разбирается по Index/Code
+mongo_db/index_write.go (request_events)	ordered	свежая БД, _id заданы явно, ошибка должна прервать замер
+mongo_db/main.go UpsertStatusChanged	upsert	идемпотентность через уникальный pg_status_history_id
+scripts/generate_data.py insert_many	пакетный INSERT ... VALUES	атомарная партия, порядок RETURNING не гарантирован
+scripts/lab3.2 COPY	массовая загрузка	быстрее INSERT ... SELECT в 3,28 раза
+7. Риски
+
+    Unordered + несколько ошибок. bulk.go проверяет len(writeErr.WriteErrors) == 1; при нескольких ошибках код упадёт. Для production-синхронизации нужен разбор всех WriteErrors с группировкой по Code.
+
+    WriteConcernError. В bulk.go явно проверяется writeErr.WriteConcernError != nil — правильно: такие ошибки не входят в WriteErrors и означают, что часть записей могла не подтвердиться.
+
+    Ordered + fsync. В index_write.go fsync через admin вынесен за пределы измеряемого интервала — иначе он исказил бы insertMillis.
+
+    PostgreSQL RETURNING без ORDER BY. insert_many полагается на порядок аргументов; стандарт этого не гарантирует. Для строгой гарантии нужен ORDER BY по временной метке или явный id.
+
+    Replica set. mongo-replication/replica-set.sh использует w=majority и readConcernLevel=majority; при failover незавершённые bulk-операции могут быть откачены, и unordered-режим здесь безопаснее, потому что частичный успех уже подтверждён majority.
+
+8. Итог
+
+    Ordered — строгий порядок и «всё или ничего до первой ошибки»: свежие вставки с явными _id, миграции, замеры (index_write.go).
+
+    Unordered — независимые операции и допустимый частичный успех: синхронизация проекций из PostgreSQL в MongoDB (bulk.go), где ошибка разбирается по .Index/.Code, а идемпотентность обеспечивается upsert'ами (UpsertStatusChanged).
+
+    В PostgreSQL-скриптах явного выбора нет: пакетный INSERT ... VALUES атомарен на уровне партии, но порядок RETURNING не гарантирован; COPY — самый быстрый способ массовой загрузки.
+
+    Доминирующий фактор производительности в присланных замерах — не режим bulk, а наличие индексов и способ загрузки (COPY vs INSERT).
+
